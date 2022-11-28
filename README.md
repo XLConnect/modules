@@ -4,9 +4,13 @@ Public javascript modules for the XLConnect platform.
 
 ## How to use 
 In javascript code, use 
+
 `http = require('https://github.com/gjvdkamp/xlc/http.cjs')`
+
 to add a module to your code, the use 
+
 `fx_data = http.get('https://au.xlw.io/Public/msv/7fn6vy')`
+
 to grab some smaple fx data from the datalake and use it a script. See [here](http://docs.xlconnect.net/javascript/) for more detail.
 
 ## How to get XLConnect 
