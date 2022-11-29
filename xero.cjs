@@ -4,6 +4,7 @@ http = require ('http.cjs')
 // constants
 const baseURL = 'https://api.xero.com/api.xro/2.0/'
 
+// internal functions
 const hds = (tenantId) => ({'xero-tenant-id' : tenantId})
 
 // exported functions 
