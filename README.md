@@ -1,6 +1,6 @@
 # xlc
 Public javascript modules for the XLConnect platform. 
-[XLConnect](https://www.xlconnect.net) is an add-in to Excel that adds cloudconnetivity and a datalake to Excel, turning it into a flexible and effective app development platform. 
+[XLConnect](https://www.xlconnect.net) is an add-in to Excel that adds cloud connectivity and a datalake to Excel, turning it into a flexible and effective app development platform. 
 
 ## How to use 
 In javascript code, use 
