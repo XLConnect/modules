@@ -11,7 +11,7 @@ to add a module to your code, the use
 
 `fx_data = http.get('https://au.xlw.io/Public/msv/7fn6vy')`
 
-to grab some smaple fx data from the datalake and use it a script. See [here](http://docs.xlconnect.net/javascript/) for more detail.
+to grab some sample fx data from the datalake and use it a script. See [here](http://docs.xlconnect.net/javascript/) for more detail.
 
 ## How to get XLConnect 
 See [here](http://docs.xlconnect.net/) on how to create an account and download the add-in 
