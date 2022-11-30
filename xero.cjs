@@ -8,7 +8,7 @@ function hds (tenantId){
     return ({'xero-tenant-id' : tenantId})
 }
 
-function orgs () {
+function Connections () {
     return http.get('https://api.xero.com/connections', null, 'xero').sort((a, b) => a.tenantName > b.tenantName ? 1 : -1)
 }
 
@@ -46,28 +46,26 @@ function Periods(ToDate, Periods){
 
 function BalanceSheet(tenantId, period, AccBasis='Accrual') {	
 
-	const rows = []
-
     let uri = baseURL + 'Reports/BalanceSheet?standardLayout=true&date=' + period
     if(AccBasis == 'Cash') uri += '&paymentsOnly=true'
+
     const h = hds(tenantId)
     const bs = http.get(uri, h, 'xero')
     
     // unpack terrible xero format into something more manageable 
+    const rows = []
     for(const rowReports of bs.Reports[0].Rows) {
-        if(rowReports.RowType == 'Section') {				
-            if(rowReports.Rows.length > 0) {					
-                for(const row of rowReports.Rows) {
-                    if(row.Cells[0].Attributes != undefined){
-                        rows.push(
-                            {
-                                AccountId : row.Cells[1].Attributes[0].Value,                                                       
-                                Period  : period,                                
-                                Value   : row.Cells[1].Value,
-                            }
-                        )
-                    } 
-                }
+        if(rowReports.RowType == 'Section') {	
+            for(const row of rowReports.Rows) {
+                if(row.Cells[0].Attributes != undefined){
+                    rows.push(
+                        {
+                            AccountID : row.Cells[1].Attributes[0].Value,                                                       
+                            Period  : period,                                
+                            Value   : row.Cells[1].Value,
+                        }
+                    )
+                } 
             }
         }	
     }
@@ -75,11 +73,8 @@ function BalanceSheet(tenantId, period, AccBasis='Accrual') {
 	return rows
 }
 
-
-
 // exports 
-exports.hds  = hds
-exports.orgs = orgs
+exports.Connections = Connections
 exports.Accounts = Accounts
 exports.Periods = Periods
 exports.BalanceSheet = BalanceSheet
