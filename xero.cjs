@@ -18,7 +18,7 @@ function Accounts(tenantId){
     return http.get(uri, h, 'xero')
 }
 
-function generatePeriods(ToDate, Periods){
+function Periods(ToDate, Periods){
 		
 	let date    = new Date(ToDate + "Z")   // Transform the string into a Date Format
 	let year    = date.getFullYear()       // Year of the date
@@ -80,6 +80,6 @@ function BalanceSheet(tenantId, period, AccBasis) {
 // exports 
 exports.hds  = hds
 exports.orgs = orgs
-exports.COA  = COA
-exports.generatePeriods = generatePeriods
+exports.Accounts = Accounts
+exports.Periods = Periods
 exports.BalanceSheet = BalanceSheet
