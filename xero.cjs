@@ -15,7 +15,7 @@ function Connections () {
 function Accounts(tenantId){       
     let uri = baseURL + 'Accounts'
     let h   = hds(tenantId) 
-    return http.get(uri, h, 'xero')
+    return http.get(uri, h, 'xero').Accounts
 }
 
 function Periods(ToDate, Periods){
