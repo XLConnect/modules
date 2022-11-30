@@ -82,3 +82,4 @@ exports.hds  = hds
 exports.orgs = orgs
 exports.COA  = COA
 exports.generatePeriods = generatePeriods
+exports.BalanceSheet = BalanceSheet
