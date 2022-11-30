@@ -50,8 +50,8 @@ function BalanceSheet(tenantId, period, AccBasis='Accrual') {
 
     let uri = baseURL + 'Reports/BalanceSheet?standardLayout=true&date=' + period
     if(AccBasis == 'Cash') uri += '&paymentsOnly=true'
-    const hs = hds(tenantId)
-    const bs    = http.get(uri, hs, 'xero')
+    const h = hds(tenantId)
+    const bs = http.get(uri, h, 'xero')
     
     // unpack terrible xero format into something more manageable 
     for(const rowReports of bs.Reports[0].Rows) {
