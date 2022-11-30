@@ -44,21 +44,21 @@ function Periods(ToDate, Periods){
 	return periods;
 }
 
-function BalanceSheet(tenantId, period, AccBasis) {	
+function BalanceSheet(tenantId, period, AccBasis='Accrual') {	
 
 	const rows = []
 
     let uri = baseURL + 'Reports/BalanceSheet?standardLayout=true&date=' + period
     if(AccBasis == 'Cash') uri += '&paymentsOnly=true'
-    const hds = hds(tenantId)
-    const bs    = http.get(uri, hds, 'xero')
+    const hs = hds(tenantId)
+    const bs    = http.get(uri, hs, 'xero')
     
+    // unpack terrible xero format into something more manageable 
     for(const rowReports of bs.Reports[0].Rows) {
         if(rowReports.RowType == 'Section') {				
             if(rowReports.Rows.length > 0) {					
                 for(const row of rowReports.Rows) {
                     if(row.Cells[0].Attributes != undefined){
-                        // Step 2: Pushing the row data
                         rows.push(
                             {
                                 AccountId : row.Cells[1].Attributes[0].Value,                                                       
