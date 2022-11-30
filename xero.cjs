@@ -73,8 +73,49 @@ function BalanceSheet(tenantId, period, AccBasis='Accrual') {
 	return rows
 }
 
+function PullJournals(startDate, endDate){
+	
+	// process dates 
+	const dStart   = new Date(StartDate)
+	const dEnd 	   = new Date(EndDate)
+	let year     = dStart.getFullYear()
+	let month    = dStart.getMonth() + 1
+	const endYear  = dEnd.getFullYear()
+	const endMonth = dEnd.getMonth() + 1
+	
+	// read journals from disk
+	let jns = []
+	while(true){
+		
+		// read journals 
+		const path = `journals/${org}/${year}-${month}-Accrual.json`	
+		const dat = JSON.parse(xlc.fileRead(path))
+		if(!dat)continue
+		
+		// transform data into rows 
+		for(const jn of Object.values(dat)){		
+			for(const jl of jn.JournalLines){		
+				const jr = { ...jn, ...jl }
+				delete jr.JournalLines
+				delete jr.TrackingCategories
+				jns.push(jr)
+			}
+		}	
+		
+		// next month 
+		month++
+		if(month==12){
+			month=1
+			year++
+		}
+		if(month > endMonth && year==endYear)break
+	}
+	return jns
+}
+
 // exports 
 exports.Connections = Connections
 exports.Accounts = Accounts
 exports.Periods = Periods
 exports.BalanceSheet = BalanceSheet
+exports.PullJournals = PullJournals
