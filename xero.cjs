@@ -1,24 +1,46 @@
+'use strict'
+
 // import libs 
-http = require ('http.cjs')
+var http = require ('http.cjs')
 
 // constants
 const baseURL = 'https://api.xero.com/api.xro/2.0/'
 
-function hds (tenantId){
+/**
+ * Helper function to wrap a Xero TenantID in a header for use with http calls
+ * @param {string} tenantId
+ * @returns 
+ */
+function xeroHeader (tenantId){
     return ({'xero-tenant-id' : tenantId})
 }
 
-function Connections () {
+/**
+ * Grab list of connected Xero organisations
+ * @returns Array of Objects
+ */
+function connections () {
     return http.get('https://api.xero.com/connections', null, 'xero').sort((a, b) => a.tenantName > b.tenantName ? 1 : -1)
 }
 
-function Accounts(tenantId){       
+/**
+ * Grab Chart of Accounts for tenant
+ * @param {string} tenantId 
+ * @returns 
+ */
+function accounts(tenantId){       
     let uri = baseURL + 'Accounts'
-    let h   = hds(tenantId) 
+    let h   = xeroHeader(tenantId) 
     return http.get(uri, h, 'xero').Accounts
 }
 
-function Periods(ToDate, Periods){
+/**
+ * Helper function to generate a list of periods 
+ * @param {string} ToDate YYYY-MM-DD
+ * @param {number} Periods number of periods to generate (going back from ToDate)
+ * @returns Array of Objects {fromDate, toDate, budgetPeriod}
+ */
+function periods(ToDate, Periods){
 		
 	let date    = new Date(ToDate + "Z")   // Transform the string into a Date Format
 	let year    = date.getFullYear()       // Year of the date
@@ -44,15 +66,22 @@ function Periods(ToDate, Periods){
 	return periods;
 }
 
-function BalanceSheet(tenantId, period, AccBasis='Accrual') {	
+/**
+ * Grab one balance sheet and unpack the Xero format into a simple table. Only returns AccountID, Period and Value.
+ * See BalanceSheetFull for more  
+ * @param {string} tenantId GUID
+ * @param {string} period date in yyyy-mm-dd format
+ * @param {string} accountingBasis Accrual or Cash
+ * @returns Array of Objects { AccountID, Period, Value }
+ */
+function balanceSheet(tenantId, period, accountingBasis='Accrual') {	
 
     let uri = baseURL + 'Reports/BalanceSheet?standardLayout=true&date=' + period
-    if(AccBasis == 'Cash') uri += '&paymentsOnly=true'
+    if(accountingBasis == 'Cash') uri += '&paymentsOnly=true'
 
-    const h = hds(tenantId)
+    const h = xeroHeader(tenantId)
     const bs = http.get(uri, h, 'xero')
     
-    // unpack terrible xero format into something more manageable 
     const rows = []
     for(const rowReports of bs.Reports[0].Rows) {
         if(rowReports.RowType == 'Section') {	
@@ -73,39 +102,60 @@ function BalanceSheet(tenantId, period, AccBasis='Accrual') {
 	return rows
 }
 
-function PullJournals(startDate, endDate){
-	
+
+/**
+ * Pull journals from datalake 
+ * @param {string} tenantId 
+ * @param {string} accountingBasis Accrual or Cash
+ * @param {string} startDate yyyy-mm-dd
+ * @param {string} endDate yyyy-mm-dd
+ * @returns Array of Objects 
+ */
+function pullJournals(tenantId, accountingBasis, startDate, endDate){
+	 
 	// process dates 
-	const dStart   = new Date(StartDate)
-	const dEnd 	   = new Date(EndDate)
+	const dStart   = new Date(startDate)	    
 	let year     = dStart.getFullYear()
 	let month    = dStart.getMonth() + 1
+
+    const dEnd 	   = new Date(endDate)   
 	const endYear  = dEnd.getFullYear()
 	const endMonth = dEnd.getMonth() + 1
+
+    // validations 
+    const checkDate = new Date('1980-01-01')
+    if(dStart < checkDate) throw 'startDate validation failed: ' + dStart.toDateString()
+    if(dEnd   < checkDate) throw 'endDate validation failed: ' + dEnd.toDateString()
+    if(dEnd   < dStart) throw 'startDate must be before endDate'
 	
 	// read journals from disk
 	let jns = []
+    let loops = 1
 	while(true){
-		
-		// read journals 
-		const path = `journals/${org}/${year}-${month}-Accrual.json`	
+
+        // read journals 
+		const path = `journals/${tenantId}/${year}-${month}-${accountingBasis}.json`	
+        console.log('reading ' + path)
 		const dat = JSON.parse(xlc.fileRead(path))
-		if(!dat)continue
-		
-		// transform data into rows 
-		for(const jn of Object.values(dat)){		
-			for(const jl of jn.JournalLines){		
-				const jr = { ...jn, ...jl }
-				delete jr.JournalLines
-				delete jr.TrackingCategories
-				jns.push(jr)
-			}
-		}	
-		
+		if(dat){		
+            // transform data into rows 
+            for(const jn of Object.values(dat)){		
+                for(const jl of jn.JournalLines){		
+                    // todo check that journal is within date range 
+                    const jr = { ...jn, ...jl }
+                    delete jr.JournalLines
+                    delete jr.TrackingCategories
+                    jns.push(jr)
+                }
+            }	
+        }else{
+            console.log('file not found')
+        }
+
 		// next month 
 		month++
-		if(month==12){
-			month=1
+		if(month>12){
+			month-=12
 			year++
 		}
 		if(month > endMonth && year==endYear)break
@@ -114,8 +164,8 @@ function PullJournals(startDate, endDate){
 }
 
 // exports 
-exports.Connections = Connections
-exports.Accounts = Accounts
-exports.Periods = Periods
-exports.BalanceSheet = BalanceSheet
-exports.PullJournals = PullJournals
+exports.connections = connections
+exports.accounts = accounts
+exports.periods = periods
+exports.balanceSheet = balanceSheet
+exports.pullJournals = pullJournals
