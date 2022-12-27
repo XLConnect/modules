@@ -124,9 +124,9 @@ function pullJournals(tenantId, accountingBasis, startDate, endDate){
 
     // validations 
     const checkDate = new Date('1980-01-01')
-    if(dStart < checkDate) throw 'startDate validation failed: ' + dStart.toDateString()
-    if(dEnd   < checkDate) throw 'endDate validation failed: ' + dEnd.toDateString()
-    if(dEnd   < dStart) throw 'startDate must be before endDate'
+    if(dStart < checkDate)  throw 'startDate validation failed: ' + dStart.toDateString()
+    if(dEnd   < checkDate)  throw 'endDate validation failed: ' + dEnd.toDateString()
+    if(dEnd   < dStart)     throw 'startDate must be before endDate'
 	
 	// read journals from disk
 	let jns = []
@@ -165,7 +165,7 @@ function pullJournals(tenantId, accountingBasis, startDate, endDate){
 
 // exports 
 exports.connections = connections
-exports.accounts = accounts
-exports.periods = periods
+exports.accounts    = accounts
+exports.periods     = periods
 exports.balanceSheet = balanceSheet
 exports.pullJournals = pullJournals
