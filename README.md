@@ -5,9 +5,9 @@ Public javascript modules for the XLConnect platform.
 ## How to use 
 In javascript code, use 
 
-`http = require('https://github.com/gjvdkamp/xlc/http.cjs')`
+`http = require('http.cjs')`
 
-to add a module to your code, the use 
+to add a module to your code, then use 
 
 `fx_data = http.get('https://au.xlw.io/Public/msv/7fn6vy')`
 
@@ -16,9 +16,9 @@ to grab some sample fx data from the datalake and use it a script. See [here](ht
 ## How to get XLConnect 
 See [here](http://docs.xlconnect.net/) on how to create an account and download the add-in 
 
-## In thos repository
+## In this repository
 This online repo contains the following modules:
-* `http` contains wrapper functionwsto streamline working with http requests 
-* `file` contains wrapper functions to streamline working with data files in the data lake 
-* `xero` contains building blocks to build on the Xero API 
+* `http` wrapper functions to streamline working with http requests 
+* `file` wrapper functions to streamline working with data files in the data lake 
+* `xero` building blocks to build on the Xero API 
 
