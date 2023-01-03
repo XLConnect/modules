@@ -114,7 +114,7 @@ function balanceSheet(tenantId, period, accountingBasis='Accrual') {
 function pullJournals(tenantId, accountingBasis, startDate, endDate){
 	 
 	// process dates 
-	const dStart   = new Date(startDate)	    
+	const dStart = new Date(startDate)	    
 	let year     = dStart.getFullYear()
 	let month    = dStart.getMonth() + 1
 
@@ -152,13 +152,15 @@ function pullJournals(tenantId, accountingBasis, startDate, endDate){
             console.log('file not found')
         }
 
-		// next month 
+		// next month        
 		month++
 		if(month>12){
 			month-=12
 			year++
-		}
-		if(month > endMonth && year==endYear)break
+		}		
+        if(year > endYear) break
+        if(year == endYear && month > endMonth) break
+
 	}
 	return jns
 }
