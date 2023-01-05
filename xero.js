@@ -1,7 +1,7 @@
 'use strict'
 
 // import libs 
-var http = require ('http.cjs')
+var http = require ('http.js')
 
 // constants
 const baseURL = 'https://api.xero.com/api.xro/2.0/'
