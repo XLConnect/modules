@@ -190,6 +190,11 @@ function lpad(num) {
 }
 
 function syncJournals(tenantId, tenantName, accBasis) {
+
+  // transitional code: delete old cache structure if found
+  let oldSettings = xlc.fileRead("journals/settings.json");
+  if (oldSettings) xlc.folderDelete("journals", true);
+
   // read settings from previous run (if there was one)
   let settingsPath = `journals/${tenantId}/${accBasis}/settings.json`;
   let settings = read(settingsPath);
@@ -314,7 +319,7 @@ function getLastCreatedDate(settings, tenantId, accBasis) {
 
 // wrapper function to write lastCreatedDate to settings for tenantId and AccBasis
 function setLastCreatedDate(settings, tenantId, accBasis, lastCreatedDate) {
-    settings.lastCreatedDate = lastCreatedDate;
+  settings.lastCreatedDate = lastCreatedDate;
 }
 
 // write cache with files journals grouped per month to disk
