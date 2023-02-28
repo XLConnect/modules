@@ -145,7 +145,6 @@ function pullJournals(tenantId, accBasis, startDate, endDate) {
           // todo check that journal is within date range
           const jr = { ...jn, ...jl };
           delete jr.JournalLines;
-          delete jr.TrackingCategories;
           jns.push(jr);
         }
       }
@@ -330,6 +329,7 @@ function writeFiles(cache, tenantId, accBasis) {
     write(fileName, cache[fileKey]);
   }
 }
+
 // exports
 exports.connections = connections;
 exports.accounts = accounts;
