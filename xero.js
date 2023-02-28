@@ -111,7 +111,8 @@ function balanceSheet(tenantId, period, accountingBasis = "Accrual") {
  * @returns Array of Objects
  */
 function pullJournals(tenantId, accBasis, startDate, endDate) {
-    // merged sync with pull operations to avoid boilerplating
+
+    // always sync before pulling it's only a single empty call when there are no new journals and it saves on boilerplate code
     syncJournals(tenantId, tenantName, accBasis);
 
     // process dates
@@ -125,22 +126,16 @@ function pullJournals(tenantId, accBasis, startDate, endDate) {
 
     // validations
     const checkDate = new Date("1980-01-01");
-    if (dStart < checkDate) {
-        throw "startDate validation failed: " + dStart.toDateString();
-    }
-    if (dEnd < checkDate) {
-        throw "endDate validation failed: " + dEnd.toDateString();
-    }
+    if (dStart < checkDate) throw "startDate validation failed: " + dStart.toDateString();
+    if (dEnd < checkDate) throw "endDate validation failed: " + dEnd.toDateString();
     if (dEnd < dStart) throw "startDate must be before endDate";
 
     // read journals from disk
     let jns = [];
-    let loops = 1;
     while (true) {
         // read journals
         const fileName = `journals/${tenantId}/${accBasis}/${year}-${month}.json`;
-        console.log("reading " + fileName);
-        const dat = JSON.parse(xlc.fileRead(fileName));
+        const dat = read(fileName);
         if (dat) {
             // transform data into rows
             for (const jn of Object.values(dat)) {
@@ -204,7 +199,7 @@ function syncJournals(tenantId, tenantName, accBasis) {
     if (!settings) settings = {};
 
     let progress = 0;
-    console.log(        "-------------------------------------------------------------------"    );
+    console.log("-------------------------------------------------------------------");
     console.log("SYNCING " + tenantName);
 
     // see if we pulled this orgs before
@@ -222,12 +217,11 @@ function syncJournals(tenantId, tenantName, accBasis) {
     let memFiles = {}; // in memory cache of journals grouped by journal month
 
     while (true) { // loop until no more chunks
-        console.log("fetching 100 journals from " + offset);
 
         // grab chunk of journals off of Xero
         var uri = "https://api.xero.com/api.xro/2.0/Journals?offset=" + offset;
         if (accBasis == "Cash") uri += "&paymentsonly=true";
-        console.log(uri);
+        console.log('fetching ' + uri);
         let batch = get(uri, hds);
 
         // update user about progress
@@ -265,9 +259,10 @@ function syncJournals(tenantId, tenantName, accBasis) {
         }
 
         // limit cache to 18 months, else flush to disk and reset
-        if (Object.keys(memFiles).length > 36) {
-            flushCache(memFiles, settingsPath, settings, tenantId, accBasis);
-            memFiles = {}
+        if (Object.keys(memFiles).length > 24) {
+            console.log('In memory cache larger than 24 periods, flushing to disk to limit memory usage')
+            writeCache(memFiles, settingsPath, settings, tenantId, accBasis);
+            memFiles = {} // reset
         }
 
         // workout starting point of next chunk
@@ -278,37 +273,38 @@ function syncJournals(tenantId, tenantName, accBasis) {
     }
 
     // write final data to disk
-    flushCache(memFiles, settingsPath, settings, tenantId, accBasis);
+    writeCache(memFiles, settingsPath, settings, tenantId, accBasis);
 
     console.log("Sync completed");
 }
 
 function readCache(tenantId, accBasis, fileKey) {
-    { // key not in cache
-        let fileName = `journals/${tenantId}/${accBasis}/${fileKey}.json`;
-        let d = read(fileName);
-        if (d) {
-            console.log("file found: " + fileName);
-        } else {
-            console.log("new cache created: " + fileName);
-            d = {};
-        }
-        return d;
+
+    let fileName = `journals/${tenantId}/${accBasis}/${fileKey}.json`;
+    let d = read(fileName);
+    if (d) {
+        console.log("file found: " + fileName);
+    } else {
+        console.log("new cache created: " + fileKey);
+        d = {};
     }
+    return d;
+
 }
 
-function flushCache(memFiles, settingsPath, settings, tenantId, accBasis) {
-    console.log("Flushing cache to disk ------------------------------------");
+function writeCache(memFiles, settingsPath, settings, tenantId, accBasis) {
 
+    console.log("Writing cache to disk ------------------------------------");
     // save last batch to disk
-    writeFiles(memFiles, tenantId, accBasis);
+    for (let fileKey in memFiles) {
+        let fileName = `journals/${tenantId}/${accBasis}/${fileKey}.json`;
+        console.log('writing ' + fileName);
+        write(fileName, memFiles[fileKey]);
+    }
 
     // write settings
     write(settingsPath, settings);
 
-    // drop and recreate cache
-    //delete memFiles
-    memFiles = {};
 
     console.log("------------------------------------");
 }
@@ -328,14 +324,6 @@ function setLastCreatedDate(settings, lastCreatedDate) {
     settings.lastCreatedDate = lastCreatedDate;
 }
 
-// write cache with files journals grouped per month to disk
-function writeFiles(cache, tenantId, accBasis) {
-    for (let fileKey in cache) {
-        let fileName = `journals/${tenantId}/${accBasis}/${fileKey}.json`;
-        console.log('writing ' + fileName);
-        write(fileName, cache[fileKey]);
-    }
-}
 
 // exports
 exports.connections = connections;
