@@ -111,6 +111,9 @@ function balanceSheet(tenantId, period, accountingBasis = "Accrual") {
  * @returns Array of Objects
  */
 function pullJournals(tenantId, accBasis, startDate, endDate) {
+  // merged sync with pull operations to avoid boilerplating
+  syncJournals(tenantId, tenantName, accBasis)
+
   // process dates
   const dStart = new Date(startDate);
   let year = dStart.getFullYear();
@@ -145,7 +148,6 @@ function pullJournals(tenantId, accBasis, startDate, endDate) {
           // todo check that journal is within date range
           const jr = { ...jn, ...jl };
           delete jr.JournalLines;
-          delete jr.TrackingCategories;
           jns.push(jr);
         }
       }
@@ -330,6 +332,7 @@ function writeFiles(cache, tenantId, accBasis) {
     write(fileName, cache[fileKey]);
   }
 }
+
 // exports
 exports.connections = connections;
 exports.accounts = accounts;
