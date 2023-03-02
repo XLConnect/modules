@@ -105,12 +105,13 @@ function balanceSheet(tenantId, period, accountingBasis = "Accrual") {
 /**
  * Pull journals from datalake
  * @param {string} tenantId
+ * @param {string} tenantName Organisation name
  * @param {string} accountingBasis Accrual or Cash
  * @param {string} startDate yyyy-mm-dd
  * @param {string} endDate yyyy-mm-dd
  * @returns Array of Objects
  */
-function pullJournals(tenantId, accBasis, startDate, endDate) {
+function pullJournals(tenantId, tenantName, accBasis, startDate, endDate) {
   // merged sync with pull operations to avoid boilerplating
   syncJournals(tenantId, tenantName, accBasis)
 
