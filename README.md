@@ -5,7 +5,7 @@ Public javascript modules for the XLConnect platform.
 ## How to use 
 In javascript code, use 
 
-`http = require('http.cjs')`
+`http = require('http.js')`
 
 to add a module to your code, then use 
 

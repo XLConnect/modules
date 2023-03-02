@@ -20,10 +20,7 @@ function xeroHeader(tenantId) {
  * @returns Array of Objects
  */
 function connections() {
-    return http.get("https://api.xero.com/connections", null, "xero").sort((
-        a,
-        b,
-    ) => a.tenantName > b.tenantName ? 1 : -1);
+    return http.get("https://api.xero.com/connections", null, "xero").sort((a, b,) => a.tenantName > b.tenantName ? 1 : -1);
 }
 
 /**
@@ -105,12 +102,13 @@ function balanceSheet(tenantId, period, accountingBasis = "Accrual") {
 /**
  * Pull journals from datalake
  * @param {string} tenantId
+ * @param {string} tenantName used only to display progress updates to the user
  * @param {string} accountingBasis Accrual or Cash
  * @param {string} startDate yyyy-mm-dd
  * @param {string} endDate yyyy-mm-dd
  * @returns Array of Objects
  */
-function pullJournals(tenantId, accBasis, startDate, endDate) {
+function pullJournals(tenantId, tenantName, accBasis, startDate, endDate) {
 
     // always sync before pulling it's only a single empty call when there are no new journals and it saves on boilerplate code
     syncJournals(tenantId, tenantName, accBasis);
@@ -305,7 +303,6 @@ function writeCache(memFiles, settingsPath, settings, tenantId, accBasis) {
     // write settings
     write(settingsPath, settings);
 
-
     console.log("------------------------------------");
 }
 
@@ -323,7 +320,6 @@ function getLastCreatedDate(settings) {
 function setLastCreatedDate(settings, lastCreatedDate) {
     settings.lastCreatedDate = lastCreatedDate;
 }
-
 
 // exports
 exports.connections = connections;
