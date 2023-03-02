@@ -132,8 +132,10 @@ function pullJournals(tenantId, tenantName, accBasis, startDate, endDate) {
     let jns = [];
     while (true) {
         // read journals
-        const fileName = `journals/${tenantId}/${accBasis}/${year}-${month}.json`;
-        const dat = read(fileName);
+        //const fileName = `journals/${tenantId}/${accBasis}/${year}-${month}.json`;
+        const periodKey = `${year}-${month}`;
+        const filePath = cachePath(tenantId, accBasis, periodKey)
+        const dat = read(filePath);
         if (dat) {
             // transform data into rows
             for (const jn of Object.values(dat)) {
@@ -154,6 +156,7 @@ function pullJournals(tenantId, tenantName, accBasis, startDate, endDate) {
             month -= 12;
             year++;
         }
+        console.log(year +'-' + month)
         if (year > endYear) break;
         if (year == endYear && month > endMonth) break;
     }
@@ -182,6 +185,9 @@ function get(uri, hds = null, auth = "Xero") {
 }
 function lpad(num) {
     return ("0" + num).slice(-2);
+}
+function cachePath(tenantId, accBasis, periodKey){
+    return `journals2/${tenantId}/${accBasis}/${periodKey}.json`;
 }
 
 function syncJournals(tenantId, tenantName, accBasis) {
@@ -276,14 +282,15 @@ function syncJournals(tenantId, tenantName, accBasis) {
     console.log("Sync completed");
 }
 
-function readCache(tenantId, accBasis, fileKey) {
+function readCache(tenantId, accBasis, periodKey) {
 
-    let fileName = `journals/${tenantId}/${accBasis}/${fileKey}.json`;
+    //let fileName =  `journals/${tenantId}/${accBasis}/${fileKey}.json`;
+    const fileName = cachePath(tenantId, accBasis, periodKey)
     let d = read(fileName);
     if (d) {
         console.log("file found: " + fileName);
     } else {
-        console.log("new cache created: " + fileKey);
+        console.log("new cache created: " + periodKey);
         d = {};
     }
     return d;
@@ -295,7 +302,7 @@ function writeCache(memFiles, settingsPath, settings, tenantId, accBasis) {
     console.log("Writing cache to disk ------------------------------------");
     // save last batch to disk
     for (let fileKey in memFiles) {
-        let fileName = `journals/${tenantId}/${accBasis}/${fileKey}.json`;
+        let fileName = cachePath(tenantId, accBasis, fileKey)
         console.log('writing ' + fileName);
         write(fileName, memFiles[fileKey]);
     }
