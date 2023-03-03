@@ -13,13 +13,15 @@ To add a function from that module to your code, it from the right hand pane int
 
 ![](DragModulesFunction.png)
 
-That insert this line into your code:
+That inserts this line into your code:
 
 `http.get(uri, hds = null, auth = null)`
 
-Then edit to this example that grabs FX data from the Data Lake:
+Edit that line the example below to grab FX data from the Data Lake:
 
-`fx_data = http.get('https://au.xlw.io/Public/msv/7fn6vy')`
+```
+fx_data = http.get('https://au.xlw.io/Public/msv/7fn6vy')
+```
 
 See [here](http://docs.xlconnect.net/javascript/) for the docs on how to use javascript in XLConnect. 
 <br/>
