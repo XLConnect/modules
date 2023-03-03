@@ -3,7 +3,7 @@ Public javascript modules for the XLConnect platform.
 [XLConnect](https://www.xlconnect.net) is an add-in to Excel that adds cloud connectivity and a datalake to Excel, turning it into a flexible and effective app development platform. 
 
 ## How to use 
-In javascript workbench, use Modules > HTTP to insert that module into your code: 
+In javascript workbench, use `Modules > HTTP` to insert that module into your code: 
 
 ![](InsertModule.png)
 
@@ -43,10 +43,12 @@ Then follow these steps to edit the XLConnect `settings.json` file:
 
 ### During development
 * Make changes to the code, then save 
-* In XLConnect Workbench, 
+* In XLConnect Workbench, hit `Modules > Flush module cache`
+* Run your code again to debug changes in module
 
-When you execute `require('<modulename>')` in javascript, XLConnect will look for that filename in ModuleSearchPaths and use the first hit. You can also use this to write yor own modules, put them somewhere on the network or internet and use them in your workbooks. 
+When you execute `require('<modulename>')` in javascript, XLConnect will look for that filename in ModuleSearchPaths and use the first hit. It will cache that module to improve response times and save network traffic.
 
+You can also use this to write your own modules, put them somewhere on the network or web and use them in your workbooks. 
 
 
 ## How to get XLConnect 
