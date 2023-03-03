@@ -20,7 +20,7 @@ That inserts this line into your code:
 Edit that line the example below to grab FX data from the Data Lake:
 
 ```
-fx_data = http.get('https://au.xlw.io/Public/msv/7fn6vy')
+fx_data = http.get('https://au.xlw.io/Public/msv/7fn6vy', null, 'xlc')
 ```
 
 See [here](http://docs.xlconnect.net/javascript/) for the docs on how to use javascript in XLConnect. 
