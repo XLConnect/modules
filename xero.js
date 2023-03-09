@@ -64,6 +64,49 @@ function periods(ToDate, Periods) {
     return periods;
 }
 
+
+function trackingCategories(tenantId){
+    const uri = 'https://api.xero.com/api.xro/2.0/TrackingCategories'
+    let hds = xeroHeader(tenantId);
+    return http.get(uri, hds, "xero").TrackingCategories;
+}
+
+/**
+ * Grab one balance sheet and unpack the Xero format into a simple table. Only returns AccountID, Period and Value.
+ * See BalanceSheetFull for more
+ * @param {string} tenantId GUID
+ * @param {string} period date in yyyy-mm-dd format
+ * @param {string} accountingBasis Accrual or Cash
+ * @returns Array of Objects { AccountID, Period, Value }
+ */
+function profitAndLoss(tenantId, period, accountingBasis = "Accrual") {
+    
+    let uri = baseURL + "Reports/BalanceSheet?standardLayout=true&date=" + period;
+    if (accountingBasis == "Cash") uri += "&paymentsOnly=true";
+
+    const h = xeroHeader(tenantId);
+    const bs = http.get(uri, h, "xero");
+
+    const rows = [];
+    for (const rowReports of bs.Reports[0].Rows) {
+        if (rowReports.RowType == "Section") {
+            for (const row of rowReports.Rows) {
+                if (row.Cells[0].Attributes != undefined) {
+                    rows.push(
+                        {
+                            AccountID: row.Cells[1].Attributes[0].Value,
+                            Period: period,
+                            Value: row.Cells[1].Value,
+                        },
+                    );
+                }
+            }
+        }
+    }
+
+    return rows;
+}
+
 /**
  * Grab one balance sheet and unpack the Xero format into a simple table. Only returns AccountID, Period and Value.
  * See BalanceSheetFull for more
@@ -122,11 +165,19 @@ function pullJournals(tenantId, tenantName, accBasis, startDate, endDate) {
     const endYear = dEnd.getFullYear();
     const endMonth = dEnd.getMonth() + 1;
 
+    console.log(startDate)
+    console.log(endDate)
+
     // validations
     const checkDate = new Date("1980-01-01");
+    if(dStart ===null) throw "startDate cannot be null"
     if (dStart < checkDate) throw "startDate validation failed: " + dStart.toDateString();
+    if(dEnd ===null) throw "startDate cannot be null"
     if (dEnd < checkDate) throw "endDate validation failed: " + dEnd.toDateString();
     if (dEnd < dStart) throw "startDate must be before endDate";
+
+    // get tracking categories 
+    const tcCats = trackingCategories(tenantId).filter(tc => tc.Status === 'ACTIVE').map(tc => tc.Name)	
 
     // read journals from disk
     let jns = [];
@@ -140,9 +191,22 @@ function pullJournals(tenantId, tenantName, accBasis, startDate, endDate) {
             // transform data into rows
             for (const jn of Object.values(dat)) {
                 for (const jl of jn.JournalLines) {
+
                     // todo check that journal is within date range
                     const jr = { ...jn, ...jl };
                     delete jr.JournalLines;
+
+                    // Extract TC
+                    let tc1 = null;
+                    let tc2 = null;
+                    for(let tc of jl.TrackingCategories){
+                        if(tc.Name === tcCats[0]) tc1 = tc.Option
+                        if(tc.Name === tcCats[1]) tc2 = tc.Option
+                    }
+                    jr.TrackingCategory1 = tc1
+                    jr.TrackingCategory2 = tc2
+                    delete jr.TrackingCategories
+
                     jns.push(jr);
                 }
             }
@@ -198,7 +262,7 @@ function syncJournals(tenantId, tenantName, accBasis) {
     */
 
     // read settings from previous run (if there was one)
-    let settingsPath = `journals/${tenantId}/${accBasis}/settings.json`;
+    let settingsPath = cachePath(tenantId, accBasis, 'settings')
     let settings = read(settingsPath);
     if (!settings) settings = {};
 
@@ -331,7 +395,9 @@ function setLastCreatedDate(settings, lastCreatedDate) {
 // exports
 exports.connections = connections;
 exports.accounts = accounts;
+exports.trackingCategories = trackingCategories;
 exports.periods = periods;
+exports.profitAndLoss = profitAndLoss;
 exports.balanceSheet = balanceSheet;
 exports.syncJournals = syncJournals;
 exports.pullJournals = pullJournals;
