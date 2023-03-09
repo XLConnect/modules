@@ -167,7 +167,6 @@ function pullJournals(tenantId, tenantName, accBasis, startDate, endDate) {
 
     console.log(startDate)
     console.log(endDate)
-    return 
 
     // validations
     const checkDate = new Date("1980-01-01");
