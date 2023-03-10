@@ -41,6 +41,7 @@ function accounts(tenantId) {
  * @returns Array of Objects {fromDate, toDate, budgetPeriod}
  */
 function periods(ToDate, Periods) {
+
     let date = new Date(ToDate + "Z"); // Transform the string into a Date Format
     let year = date.getFullYear(); // Year of the date
     let month = date.getMonth(); // Month of the date
@@ -116,6 +117,7 @@ function profitAndLoss(tenantId, period, accountingBasis = "Accrual") {
  * @returns Array of Objects { AccountID, Period, Value }
  */
 function balanceSheet(tenantId, period, accountingBasis = "Accrual") {
+
     let uri = baseURL + "Reports/BalanceSheet?standardLayout=true&date=" + period;
     if (accountingBasis == "Cash") uri += "&paymentsOnly=true";
 
@@ -182,8 +184,8 @@ function pullJournals(tenantId, tenantName, accBasis, startDate, endDate) {
     // read journals from disk
     let jns = [];
     while (true) {
+
         // read journals
-        //const fileName = `journals/${tenantId}/${accBasis}/${year}-${month}.json`;
         const periodKey = `${year}-${month}`;
         const filePath = cachePath(tenantId, accBasis, periodKey)
         const dat = read(filePath);
@@ -255,11 +257,6 @@ function cachePath(tenantId, accBasis, periodKey){
 }
 
 function syncJournals(tenantId, tenantName, accBasis) {
-    /*
-    // transitional code: delete old cache structure if found
-    let oldSettings = xlc.fileRead("journals/settings.json");
-    if (oldSettings) xlc.folderDelete("journals", true);
-    */
 
     // read settings from previous run (if there was one)
     let settingsPath = cachePath(tenantId, accBasis, 'settings')
@@ -348,7 +345,6 @@ function syncJournals(tenantId, tenantName, accBasis) {
 
 function readCache(tenantId, accBasis, periodKey) {
 
-    //let fileName =  `journals/${tenantId}/${accBasis}/${fileKey}.json`;
     const fileName = cachePath(tenantId, accBasis, periodKey)
     let d = read(fileName);
     if (d) {
