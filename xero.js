@@ -191,7 +191,7 @@ function pullJournals(tenantId, tenantName, accBasis, startDate, endDate) {
         const dat = read(filePath);
         if (dat) {
             // transform data into rows
-            for (const jn of Object.values(dat)) {
+            for (const jn of dat) {
                 for (const jl of jn.JournalLines) {
 
                     // todo check that journal is within date range
@@ -224,7 +224,7 @@ function pullJournals(tenantId, tenantName, accBasis, startDate, endDate) {
         }
         console.log(year +'-' + month)
         if (year > endYear) break;
-        if (year == endYear && month > endMonth) break;
+        if (year == endYear && month > endMonth) break; // stop pulling files if we're past the end month 
     }
     return jns;
 }
@@ -294,38 +294,50 @@ function syncJournals(tenantId, tenantName, accBasis) {
         if (progress > 10) progress = 0;
         xlc.setProgressValue(progress);
 
-        if (batch.Journals.length > 0) {
+        // update user 
+        if (batch.Journals.length > 0) {            
             let lastJournal = batch.Journals[batch.Journals.length - 1];
             let lastDate = parseXeroDate(lastJournal.CreatedDateUTC);
             let lastDateString = lastDate.getFullYear() + "-" + lpad(lastDate.getMonth() + 1) + "-" + lpad(lastDate.getDate());
             xlc.setProgressMessage(`Pulling ${tenantName} journals ${accBasis} up to ${lastDateString}...`);
-        }
-
-        // update settings
-        let createdDates = batch.Journals.map((j) =>
-            parseXeroDate(j.CreatedDateUTC)
-        );
-        let lastCreatedDate = Math.max(...createdDates);
-        setLastCreatedDate(settings, lastCreatedDate);
+        }       
 
         // group journals by yyyy-mm and add to cache
         for (let j of batch.Journals) {
+
+            // update last pulled journal
+            let journalCreatedDateUTC = parseXeroDate(j.CreatedDateUTC)
+            if(journalCreatedDateUTC > lastCreatedDate) lastCreatedDate = journalCreatedDateUTC
+
+            // get journalDate
             let jd = parseXeroDate(j.JournalDate);
             let y = jd.getFullYear();
             let m = jd.getMonth() + 1;
 
-            // grab file
+            // grab of make cache file
             let fileKey = y + "-" + m;
             if (!memFiles[fileKey]) memFiles[fileKey] = readCache(tenantId, accBasis, fileKey);
             let file = memFiles[fileKey];
-
+            
             // update/ set journal
-            file[j.JournalNumber] = j;
+            if(file.length > 0){              
+                let idx = file.findIndex(ji => ji.JournalNumber === j.JournalNumber) 
+                if(idx > -1){
+                    file[idx] = j // update 
+                    console.log(`Journal updated! ${fileKey}:${j.JournalNumber}`) // want to monitor how often this actually happens, should be only first journal of each run (= last of prev run)
+                }            
+                else {
+                    file.push(j) // add
+                }
+            } else {
+                file.push(j) // add
+            }
         }
 
         // limit cache to 18 months, else flush to disk and reset
         if (Object.keys(memFiles).length > 24) {
             console.log('In memory cache larger than 24 periods, flushing to disk to limit memory usage')
+            setLastCreatedDate(settings, lastCreatedDate);
             writeCache(memFiles, settingsPath, settings, tenantId, accBasis);
             memFiles = {} // reset
         }
@@ -338,6 +350,7 @@ function syncJournals(tenantId, tenantName, accBasis) {
     }
 
     // write final data to disk
+    setLastCreatedDate(settings, lastCreatedDate);
     writeCache(memFiles, settingsPath, settings, tenantId, accBasis);
 
     console.log("Sync completed");
@@ -351,7 +364,7 @@ function readCache(tenantId, accBasis, periodKey) {
         console.log("file found: " + fileName);
     } else {
         console.log("new cache created: " + periodKey);
-        d = {};
+        d = []; 
     }
     return d;
 
@@ -368,6 +381,7 @@ function writeCache(memFiles, settingsPath, settings, tenantId, accBasis) {
     }
 
     // write settings
+    console.log(settingsPath + ":" + settings)
     write(settingsPath, settings);
 
     console.log("------------------------------------");
