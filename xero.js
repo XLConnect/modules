@@ -253,7 +253,7 @@ function lpad(num) {
     return ("0" + num).slice(-2);
 }
 function cachePath(tenantId, accBasis, periodKey){
-    return `xero/journals/${tenantId}/${accBasis}/${periodKey}.json`;
+    return `xero/${tenantId}/journals/${accBasis}/${periodKey}.json`;
 }
 
 function syncJournals(tenantId, tenantName, accBasis) {
