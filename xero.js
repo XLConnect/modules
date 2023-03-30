@@ -198,6 +198,10 @@ function pullJournals(tenantId, tenantName, accBasis, startDate, endDate) {
                     const jr = { ...jn, ...jl };
                     delete jr.JournalLines;
 
+                    // conversions
+                    jr.JournalDate = parseXeroDate(jr.JournalDate).toISOString().substring(0,10)
+                    jr.CreatedDateUTC = parseXeroDate(jr.CreatedDateUTC).toISOString()
+
                     // Extract TC
                     let tc1 = null;
                     let tc2 = null;
