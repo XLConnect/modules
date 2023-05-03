@@ -60,3 +60,4 @@ function getFXAtDate(keys) {
 
 // exports
 exports.getFXRates = getFXRates;
+exports.getLastValidRates = getLastValidRates;
