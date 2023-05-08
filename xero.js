@@ -113,22 +113,20 @@ function cellsToRows(headers, cells, period, tenantName){
 	const accountId = cells[0].Attributes[0].Value
 	
 	if(headers.length==2){ // no breakdown by TC, only rowHeader (0) and Total (1)
-		return [{ 
-            tenantName : tenantName,
-			accountId : accountId,			
-			period : period,
-			tc1 :  "Unassigned", 
-			tc2 :  "Unassigned", 
-			val :  Number(cells[1].Value) 
+		return [{             
+			AccountID : accountId,			
+			Period : period,
+			TC1 :  "Unassigned", 
+			TC2 :  "Unassigned", 
+			Value :  Number(cells[1].Value) 
 		}]
 	} else { 
-		return headers.slice(1, -1).map((h, i) => ({ // first is rowheader, last is row total
-            tenantName : tenantName,
-			accountId : accountId,
-			period : period,
-			tc1 : h.tc1, 
-			tc2 : h.tc2,  
-			val : Number(cells[i+1].Value) // +1 b/c we moved up one in the headers array (we didn't clip the cells array)
+		return headers.slice(1, -1).map((h, i) => ({ // first is rowheader, last is row total           
+			AccountID : accountId,
+			Period : period,
+			TC1 : h.tc1, 
+			TC2 : h.tc2,  
+			Value : Number(cells[i+1].Value) // +1 b/c we moved up one in the headers array (we didn't clip the cells array)
 		}))
 	}
 }
