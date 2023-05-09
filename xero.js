@@ -73,39 +73,78 @@ function trackingCategories(tenantId){
 }
 
 /**
- * Grab one balance sheet and unpack the Xero format into a simple table. Only returns AccountID, Period and Value.
- * See BalanceSheetFull for more
- * @param {string} tenantId GUID
- * @param {string} period date in yyyy-mm-dd format
- * @param {string} accountingBasis Accrual or Cash
- * @returns Array of Objects { AccountID, Period, Value }
+ * 
+ * @param {*} tenantId 
+ * @param {*} fromDate 
+ * @param {*} toDate 
+ * @param {*} accountingBasis 
+ * @param {*} tc1Id 
+ * @param {*} tc2Id 
  */
-function profitAndLoss(tenantId, period, accountingBasis = "Accrual") {
-    
-    let uri = baseURL + "Reports/BalanceSheet?standardLayout=true&date=" + period;
-    if (accountingBasis == "Cash") uri += "&paymentsOnly=true";
+function profitAndLoss(tenantId, tenantName, fromDate, toDate, accountingBasis, tc1Id, tc2Id) {    
+   
+    let uri = `${baseURL}Reports/ProfitAndLoss?fromDate=${fromDate}&toDate=${toDate}`
+    if (accountingBasis.toLowerCase() == "cash") uri += "&paymentsOnly=true";
+    if(tc1Id) uri += '&trackingCategoryID=' + tc1Id 
+    if(tc2Id) uri += '&trackingCategoryID2=' + tc2Id 
 
-    const h = xeroHeader(tenantId);
-    const bs = http.get(uri, h, "xero");
+    const hds = { 'xero-tenant-id' : tenantId };
+    const plr = http.get(uri, hds, "xero");
+    const sections = plr.Reports[0].Rows
 
-    const rows = [];
-    for (const rowReports of bs.Reports[0].Rows) {
-        if (rowReports.RowType == "Section") {
-            for (const row of rowReports.Rows) {
-                if (row.Cells[0].Attributes != undefined) {
-                    rows.push(
-                        {
-                            AccountID: row.Cells[1].Attributes[0].Value,
-                            Period: period,
-                            Value: row.Cells[1].Value,
-                        },
-                    );
-                }
-            }
-        }
+    const colHeaders = readColHeaders(sections[0]) // row 0 is col headers 
+
+    let rows = []
+    for(const section of sections){	        
+        if(section.RowType == "Header") continue
+        
+        for(const row of section.Rows){
+            if(row.Cells[0].Attributes){
+                rows.push(cellsToRows(colHeaders, row.Cells, toDate, tenantName))
+            }	
+        }	
     }
 
-    return rows;
+    return rows.flat().filter(r => r.val != 0)
+}
+
+function cellsToRows(headers, cells, period, tenantName){
+	
+	const accountId = cells[0].Attributes[0].Value
+	
+	if(headers.length==2){ // no breakdown by TC, only rowHeader (0) and Total (1)
+		return [{             
+			AccountID : accountId,			
+			Period : period,
+			TC1 :  "Unassigned", 
+			TC2 :  "Unassigned", 
+			Value :  Number(cells[1].Value) 
+		}]
+	} else { 
+		return headers.slice(1, -1).map((h, i) => ({ // first is rowheader, last is row total           
+			AccountID : accountId,
+			Period : period,
+			TC1 : h.tc1, 
+			TC2 : h.tc2,  
+			Value : Number(cells[i+1].Value) // +1 b/c we moved up one in the headers array (we didn't clip the cells array)
+		}))
+	}
+}
+
+function readColHeaders(header){
+	
+	const ua =  { tc1 :  "Unassigned", tc2 :  "Unassigned"} 
+	
+	return header.Cells.map(h => {
+		switch(h.Value){
+			case "" : return { }
+			case "Total" : return ua // this one will only be used if there are only 2 cells (rowheader and total) else the broken down headers will be used 
+			case "Unassigned" : return ua
+			default : 
+				let tcs = h.Value.split(',').map(tc => tc.trim())
+				return { tc1 : tcs[0], tc2 : tcs[1] }
+		}
+	})
 }
 
 /**
@@ -267,9 +306,11 @@ function syncJournals(tenantId, tenantName, accBasis) {
     let settings = read(settingsPath);
     if (!settings) settings = {};
 
+    xlc.setProgressMax(10);
     let progress = 0;
+
     console.log("-------------------------------------------------------------------");
-    console.log("SYNCING " + tenantName);
+    console.log("Syncing " + tenantName);
 
     // see if we pulled this orgs before
     let lastCreatedDate = getLastCreatedDate(settings);
@@ -303,7 +344,7 @@ function syncJournals(tenantId, tenantName, accBasis) {
             let lastJournal = batch.Journals[batch.Journals.length - 1];
             let lastDate = parseXeroDate(lastJournal.CreatedDateUTC);
             let lastDateString = lastDate.getFullYear() + "-" + lpad(lastDate.getMonth() + 1) + "-" + lpad(lastDate.getDate());
-            xlc.setProgressMessage(`Pulling ${tenantName} journals ${accBasis} up to ${lastDateString}...`);
+            xlc.setProgressMessage(`Syncing ${tenantName} ${accBasis} up to ${lastDateString}...`);
         }       
 
         // group journals by yyyy-mm and add to cache
