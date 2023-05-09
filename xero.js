@@ -447,6 +447,30 @@ function setLastCreatedDate(settings, lastCreatedDate) {
     settings.lastCreatedDate = lastCreatedDate;
 }
 
+/** 
+ * Changes Xero source names to a human-readable format
+ * @param {string} sourceCode: Xero API source
+ * @return {string} humanSource: Text to output to the workbook
+ */
+function sourceDecryptor(sourceCode) {
+	const sourceCodes  = ["ACCREC","ACCPAY","ACCRECCREDIT","ACCPAYCREDIT","ACCRECPAYMENT","ACCPAYPAYMENT","ARCREDITPAYMENT","APCREDITPAYMENT","CASHREC","CASHPAID","TRANSFER","ARPREPAYMENT","APPREPAYMENT","AROVERPAYMENT","APOVERPAYMENT","EXPCLAIM","EXPPAYMENT","MANJOURNAL","PAYSLIP","WAGEPAYABLE","INTEGRATEDPAYROLLPE","INTEGRATEDPAYROLLPT","EXTERNALSPENDMONEY","INTEGRATEDPAYROLLPTPAYMENT","INTEGRATEDPAYROLLCN"]
+	const sourceDecode = ["Accounts Receivable Invoice","Accounts Payable Invoice","Accounts Receivable Credit Note","Accounts Payable Credit Note","Payment on an Accounts Receivable Invoice","Payment on an Accounts Payable Invoice","Accounts Receivable Credit Note Payment","Accounts Payable Credit Note Payment","Receive Money Bank Transaction","Spend Money Bank Transaction","Bank Transfer","Accounts Receivable Prepayment","Accounts Payable Prepayment","Accounts Receivable Overpayment","Accounts Payable Overpayment","Expense Claim","Expense Claim Payment","Manual Journal","Payslip","Payroll Payable","Payroll Expense","Payroll Payment","Payroll Employee Payment","Payroll Tax Payment","Payroll Credit Note"]
+	const index = sourceCodes.findIndex(code => code === sourceCode);
+	return sourceDecode[index]
+}
+
+/** 
+ * Changes Xero type names to a human-readable format
+ * @param {string} typeCode: Xero API type 
+ * @return {string} humanSource: Text to output to the workbook
+ */
+function typeDecryptor(typeCode) {
+	const typeCodes  = ["BANK","CURRENT","CURRLIAB","DEPRECIATN","DIRECTCOSTS","EQUITY","EXPENSE","FIXED","INVENTORY","LIABILITY","NONCURRENT","OTHERINCOME","OVERHEADS","PREPAYMENT","REVENUE","SALES","TERMLIAB","PAYGLIABILITY","SUPERANNUATIONEXPENSE","SUPERANNUATIONLIABILITY","WAGESEXPENSE"]
+	const typeDecode = ["Bank account","Current Asset account","Current Liability account","Depreciation account","Direct Costs account","Equity account","Expense account","Fixed Asset account","Inventory Asset account","Liability account","Non-current Asset account","Other Income account","Overhead account","Prepayment account","Revenue account","Sale account","Non-current Liability account","PAYG Liability account","Superannuation Expense account","Superannuation Liability account","Wages Expense account"]
+	const index = typeCodes.findIndex(code => code === typeCode);
+	return typeDecode[index]
+}
+
 // exports
 exports.connections = connections;
 exports.accounts = accounts;
@@ -456,3 +480,5 @@ exports.profitAndLoss = profitAndLoss;
 exports.balanceSheet = balanceSheet;
 exports.syncJournals = syncJournals;
 exports.pullJournals = pullJournals;
+exports.sourceDecryptor = sourceDecryptor;
+exports.typeDecryptor = typeDecryptor;
