@@ -30,10 +30,10 @@ function getFXRates(toDate, numPeriods) {
 function getLastValidRates() {
 	// Start our search for valid FX rates from the present day.
 	let lastKey = new Date();
-	let lastRates = null;
+	let lastRates = [null];
 
 	// Pull the data from today's date; failing that, go back in time by one day and repeat.
-	while (lastRates == null) {
+	while (lastRates[0] == null) {
 		lastRates = getFXAtDate([getKey(lastKey)]);
 		lastKey.setDate(lastKey.getDate()-1);
 	}
