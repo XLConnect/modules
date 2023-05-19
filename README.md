@@ -61,4 +61,4 @@ This online repo contains the following modules:
 * `http.js` wrapper functions to streamline working with http requests 
 * `xero.js` functions to make working with Xero api's a breeze
 * `file.js` streamline working with data files in the data lake 
-
+* `fx.js` gets FX data from an in-house database
