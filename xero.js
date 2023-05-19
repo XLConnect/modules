@@ -226,7 +226,7 @@ function pullJournals(tenantId, tenantName, accBasis, startDate, endDate) {
 
         // read journals
         const periodKey = `${year}-${month}`;
-        const filePath = cachePath(tenantId, accBasis, periodKey)
+        const filePath = journalsPath(tenantId, accBasis, periodKey)
         const dat = read(filePath);
         if (dat) {
             // transform data into rows
@@ -295,14 +295,14 @@ function get(uri, hds = null, auth = "Xero") {
 function lpad(num) {
     return ("0" + num).slice(-2);
 }
-function cachePath(tenantId, accBasis, periodKey){
+function journalsPath(tenantId, accBasis, periodKey){
     return `xero/${tenantId}/journals/${accBasis}/${periodKey}.json`;
 }
 
 function syncJournals(tenantId, tenantName, accBasis) {
 
     // read settings from previous run (if there was one)
-    let settingsPath = cachePath(tenantId, accBasis, 'settings')
+    let settingsPath = journalsPath(tenantId, accBasis, 'settings')
     let settings = read(settingsPath);
     if (!settings) settings = {};
 
@@ -318,7 +318,7 @@ function syncJournals(tenantId, tenantName, accBasis) {
     // prepare headers for incremental pull (starting at last seen journal)
     const hds = {
         "Xero-Tenant-Id": tenantId,
-        "if-modified-since": lastCreatedDate.toUTCString(),
+        "if-modified-since": lastCreatedDate.toUTCString()
     };
     console.log(hds);
 
@@ -361,7 +361,7 @@ function syncJournals(tenantId, tenantName, accBasis) {
 
             // grab of make cache file
             let fileKey = y + "-" + m;
-            if (!memFiles[fileKey]) memFiles[fileKey] = readCache(tenantId, accBasis, fileKey);
+            if (!memFiles[fileKey]) memFiles[fileKey] = readJournals(tenantId, accBasis, fileKey);
             let file = memFiles[fileKey];
             
             // update/ set journal
@@ -383,7 +383,7 @@ function syncJournals(tenantId, tenantName, accBasis) {
         if (Object.keys(memFiles).length > 24) {
             console.log('In memory cache larger than 24 periods, flushing to disk to limit memory usage')
             setLastCreatedDate(settings, lastCreatedDate);
-            writeCache(memFiles, settingsPath, settings, tenantId, accBasis);
+            writeJournals(memFiles, settingsPath, settings, tenantId, accBasis);
             memFiles = {} // reset
         }
 
@@ -396,14 +396,14 @@ function syncJournals(tenantId, tenantName, accBasis) {
 
     // write final data to disk
     setLastCreatedDate(settings, lastCreatedDate);
-    writeCache(memFiles, settingsPath, settings, tenantId, accBasis);
+    writeJournals(memFiles, settingsPath, settings, tenantId, accBasis);
 
     console.log("Sync completed");
 }
 
-function readCache(tenantId, accBasis, periodKey) {
+function readJournals(tenantId, accBasis, periodKey) {
 
-    const fileName = cachePath(tenantId, accBasis, periodKey)
+    const fileName = journalsPath(tenantId, accBasis, periodKey)
     let d = read(fileName);
     if (d) {
         console.log("file found: " + fileName);
@@ -415,12 +415,12 @@ function readCache(tenantId, accBasis, periodKey) {
 
 }
 
-function writeCache(memFiles, settingsPath, settings, tenantId, accBasis) {
+function writeJournals(memFiles, settingsPath, settings, tenantId, accBasis) {
 
     console.log("Writing cache to disk ------------------------------------");
     // save last batch to disk
     for (let fileKey in memFiles) {
-        let fileName = cachePath(tenantId, accBasis, fileKey)
+        let fileName = journalsPath(tenantId, accBasis, fileKey)
         console.log('writing ' + fileName);
         write(fileName, memFiles[fileKey]);
     }
