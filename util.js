@@ -8,7 +8,5 @@ function parseUnixDate(unixTimestamp) {
     return new Date(unixTimestamp * 1000);
 }
 
-exports = {
-    parseExcelDate,
-    parseUnixDate
-}
+exports.parseExcelDate = parseExcelDate;
+exports.parseUnixDate = parseUnixDate;
