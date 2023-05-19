@@ -472,13 +472,16 @@ function typeLabel(typeCode) {
 }
 
 // exports
-exports.connections = connections;
-exports.accounts = accounts;
-exports.trackingCategories = trackingCategories;
-exports.periods = periods;
-exports.profitAndLoss = profitAndLoss;
-exports.balanceSheet = balanceSheet;
-exports.syncJournals = syncJournals;
-exports.pullJournals = pullJournals;
-exports.sourceLabel = sourceLabel;
-exports.typeLabel = typeLabel;
+exports = {
+    connections,
+    accounts,
+    trackingCategories,
+    periods,
+    profitAndLoss,
+    balanceSheet,
+    syncJournals,
+    pullJournals,
+    sourceLabel,
+    typeLabel,
+    parseXeroDate
+}
