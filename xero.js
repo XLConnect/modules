@@ -233,8 +233,9 @@ function pullJournals(tenantId, tenantName, accBasis, startDate, endDate) {
             for (const jn of dat) {
                 for (const jl of jn.JournalLines) {
 
-                    // todo check that journal is within date range
-                    const jr = { ...jn, ...jl };
+                    if (parseXeroDate(jn.JournalDate).getTime() > dEnd.getTime()) continue;
+
+					const jr = { ...jn, ...jl };
                     delete jr.JournalLines;
 
                     // conversions
