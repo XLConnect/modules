@@ -58,6 +58,31 @@ function getFXAtDate(keys) {
 	return JSON.parse(xlc.msgs('Public', 'gVAHG1', keys).Result);
 }
 
+function get(date_s){
+
+	if(isArray(date_s)){
+		date_s.map((e, i) => { if(!isDate(e)) throw `Element ${i} is not a valid Date: ${e}`});
+		const keys = date_s.map(d => d.toISOString().slice(0,10));
+		const rates = getFXAtDate(keys);
+		return rates.map(r => r.dat);
+	}else{
+		if(!isDate(date_s)) throw ` ${date_s} is not a valid Date`
+		const keys = [date_s.toISOString().slice(0,10)]
+		const rates = getFXAtDate(keys)
+		return rates[0].dat
+	}
+}
+
+function isDate(input) {
+	if (Object.prototype.toString.call(input) === "[object Date]") return true;
+	return false;
+ };
+
+ function isArray(input){
+	return Array.isArray(input)
+ }
+
 // exports
 exports.getFXRates = getFXRates;
 exports.getLastValidRates = getLastValidRates;
+exports.get = get;
