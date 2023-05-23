@@ -78,6 +78,24 @@ function get(date_s){
 	}
 }
 
+/**
+ * 
+ * @param {fx} fx 
+ * @param {string} from 
+ * @param {string} to 
+ */
+function convert(fx, from, to){
+	
+	let rates = fx.rates;
+	let f = rates[from];
+	if(from === "USD" || from === "GBP") f = 1/f
+		
+	let t = rates[to]
+	if(to === "USD" || to === "GBP") t = 1/t
+		
+	return f / t	
+}
+
 function isDate(input) {
 	if (Object.prototype.toString.call(input) === "[object Date]") return true;
 	return false;
@@ -91,3 +109,4 @@ function isDate(input) {
 exports.getFXRates = getFXRates;
 exports.getLastValidRates = getLastValidRates;
 exports.get = get;
+exports.convert = convert;
