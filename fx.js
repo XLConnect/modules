@@ -60,12 +60,17 @@ function getFXAtDate(keys) {
 
 function get(date_s){
 
+	// if no argument given (ie called as fx.get()), return last available rate from dl 
+	if(date_s == null) return getLastValidRates().dat
+
 	if(isArray(date_s)){
+		// array od dates => array of rates 
 		date_s.map((e, i) => { if(!isDate(e)) throw `Element ${i} is not a valid Date: ${e}`});
 		const keys = date_s.map(d => d.toISOString().slice(0,10));
 		const rates = getFXAtDate(keys);
 		return rates.map(r => r.dat);
 	}else{
+		// single date => single rate
 		if(!isDate(date_s)) throw ` ${date_s} is not a valid Date`
 		const keys = [date_s.toISOString().slice(0,10)]
 		const rates = getFXAtDate(keys)
