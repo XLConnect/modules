@@ -86,14 +86,11 @@ function get(date_s){
  */
 function convert(fx, from, to){
 	
-	let rates = fx.rates;
-	let f = rates[from];
-	if(from === "USD" || from === "GBP") f = 1/f
+	let rates = fx.rates;	
+	let f = rates[from];		
+	let t = rates[to]	
 		
-	let t = rates[to]
-	if(to === "USD" || to === "GBP") t = 1/t
-		
-	return f / t	
+	return t / f
 }
 
 function isDate(input) {
