@@ -472,8 +472,15 @@ function typeLabel(typeCode) {
 	return typeDecode[index]
 }
 
+function Organisation(tenantId) {
+    let hds = xeroHeader(tenantId)
+    let org = http.get('https://api.xero.com/api.xro/2.0/Organisation', hds, 'xero')
+    return org.Organisations[0]
+}
+
 // exports
 exports.connections = connections;
+exports.Organisation = Organisation;
 exports.accounts = accounts;
 exports.trackingCategories = trackingCategories;
 exports.periods = periods;
