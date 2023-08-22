@@ -35,6 +35,19 @@ function accounts(tenantId) {
 }
 
 /**
+ * Grab Tax Rates for tenant
+ * @param {string} tenantId
+ * @returns
+ */
+function taxRates(tenantId) {
+    let uri = baseURL + "TaxRates";
+    let h = xeroHeader(tenantId);
+    return http.get(uri, h, "xero").Accounts;
+}
+
+
+
+/**
  * Helper function to generate a list of periods
  * @param {string} ToDate YYYY-MM-DD
  * @param {number} Periods number of periods to generate (going back from ToDate)
@@ -483,6 +496,7 @@ exports.connections = connections;
 exports.Organisation = Organisation;
 exports.accounts = accounts;
 exports.trackingCategories = trackingCategories;
+exports.taxRates = taxRates;
 exports.periods = periods;
 exports.profitAndLoss = profitAndLoss;
 exports.balanceSheet = balanceSheet;
