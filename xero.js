@@ -42,7 +42,7 @@ function accounts(tenantId) {
 function taxRates(tenantId) {
     let uri = baseURL + "TaxRates";
     let h = xeroHeader(tenantId);
-    return http.get(uri, h, "xero").Accounts;
+    return http.get(uri, h, "xero").TaxRates;
 }
 
 
