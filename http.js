@@ -32,11 +32,20 @@ function fdelete(uri, hds = null, auth = null){
     return JSON.parse(res)
 }
 
+function http(verb, uri, content, hds, auth){
+    let j = JSON.stringify(content)
+    let res = xlc.http(verb, uri, j, hds, auth).Result
+    return JSON.parse(res)
+}
 
 exports.get = get
 exports.put = put
 exports.post = post
 exports.patch = patch
 exports.delete = fdelete
+exports.head = head
+exports.http = http
+
+
 //exports.head = head
 

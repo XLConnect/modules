@@ -14,7 +14,7 @@ function fdelete(path){
     xlc.fileDelete(path)
 }
 
-function list(path, filter='*.*', subfolders=false){
+function list(path='', filter='*.*', subfolders=true){
     // path: the path to list files from (starting from the XLConnect Data folder) 
     // filter: can have be wildcards like '*.json' or '2023-??.json', null 
     // subfolders: search includes all folders below path
