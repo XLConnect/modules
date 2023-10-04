@@ -2,6 +2,7 @@
 
 // import libs
 var http = require("http.js");
+var util = require("util.js");
 
 // constants
 const baseURL = "https://api.xero.com/api.xro/2.0/";
@@ -21,6 +22,28 @@ function xeroHeader(tenantId) {
  */
 function connections() {
     return http.get("https://api.xero.com/connections", null, "xero").sort((a, b,) => a.tenantName > b.tenantName ? 1 : -1);
+}
+
+function getMarkedTenantId(Connections){
+    // returns one tenantId from the Connections table that has the Pull column marked
+    if(!Connections) throw 'Please import a Connections table into the workbook'
+    if(!Array.isArray(Connections)) throw 'Connections must be an array, please import a Connections table into the workbook'
+
+    const sel = Connections.filter(a => a.Pull)
+    if(sel.length != 1) throw 'Please select (only) one tenant to pull'
+    const tenantId =sel[0].TenantId
+    return tenantId
+}
+
+function getMarkedTenantIds(Connections){
+    // returns marked tenantIds from the Connections table
+    if(!Connections) throw 'Please import a Connections table into the workbook'
+    if(!Array.isArray(Connections)) throw 'Connections must be an array, please import a Connections table into the workbook'
+
+    const sel = Connections.filter(a => a.Pull)
+    if(sel.length < 1) throw 'Please select at least one tenant to pull'
+    const tenantIds = sel.map(a => a.TenantId)
+    return tenantIds    
 }
 
 /**
@@ -55,7 +78,8 @@ function taxRates(tenantId) {
  */
 function periods(ToDate, Periods) {
 
-    let date = new Date(ToDate + "Z"); // Transform the string into a Date Format
+    //let date = new Date(ToDate + "Z"); // Transform the string into a Date Format
+    let date = util.parseAnyDate(ToDate); // Transform the string into a Date Format
     let year = date.getFullYear(); // Year of the date
     let month = date.getMonth(); // Month of the date
     let periods = []; // Array to be returned (with list of periods)
@@ -493,6 +517,8 @@ function Organisation(tenantId) {
 
 // exports
 exports.connections = connections;
+exports.getMarkedTenantId = getMarkedTenantId;
+exports.getMarkedTenantIds = getMarkedTenantIds;
 exports.Organisation = Organisation;
 exports.accounts = accounts;
 exports.trackingCategories = trackingCategories;

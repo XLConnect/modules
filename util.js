@@ -25,8 +25,35 @@ function isoDate(year, month, day){
 	return new Date(Date.UTC(year,month-1, day)).toISOString().slice(0,10)
 }
 
+function parseAnyDate(date){
+    // parse a date wether it is a string, Excel date number or Unix timestamp
+    if (typeof date === 'string'){  
+        return new Date(date);
+    } else if (typeof date === 'number'){        
+        return parseExcelDate(date);        
+    } else if (date instanceof Date){
+        return date;
+    }
+}
+
+function endOfMonth(startDate, months) {
+
+    // Parse the start date
+    const jsDate = parseAnyDate(startDate);
+  
+    // Add the months
+    let newDate = new Date(jsDate.getFullYear(), jsDate.getMonth() + months + 1, 1);
+    
+    // Go back one day to get the last day of the desired month
+    newDate.setDate(newDate.getDate() - 1);
+  
+    return newDate;
+}
+
 exports.parseExcelDate = parseExcelDate;
 exports.toExcelDate = toExcelDate;
 exports.parseUnixDate = parseUnixDate;
 exports.toUnixDate =toUnixDate;
 exports.isoDate = isoDate;
+exports.parseAnyDate = parseAnyDate;
+exports.endOfMonth = endOfMonth;

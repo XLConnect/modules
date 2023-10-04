@@ -33,7 +33,7 @@ function fdelete(uri, hds = null, auth = null){
 }
 
 function http(verb, uri, content, hds, auth){
-    let j = JSON.stringify(content)
+    let j = content ? JSON.stringify(content) : null
     let res = xlc.http(verb, uri, j, hds, auth).Result
     return JSON.parse(res)
 }
