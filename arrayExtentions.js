@@ -1,43 +1,32 @@
 function README(){
     /* 
-	Adds the following functions to all arrays:
+
+	Helper functions to make it easier to work with arrays and arrays of objects (aka tables).
+	They are similar to the functions in the pandas library for python.
+
+	These functions can be used in two ways:
+
+	1. As methods on an array. To use this mode, please execute the following line of code after including this module:	
+
+		arrayExtentions = require('arrayExtentions.js')		// include the module
+		arrayExtentions.attachExtentions() 					// this adds the functions to the Array.prototype so the functions are available on all arrays
+
+		myArray.sum() 										// returns the sum of the array
+		myArray.sum('Amount')								// returns the sum of the Amount property (column)
+
+		when browsing the functions in the Engine pane, please omit the first parameter (array) when using in this mode. 
+
+	2. As functions that take an array as the first parameter and return a value. 
 		
-		// aggregation
-		count(filter)
-		sum(lamdba)
-		avg(lambda)
-		stdev(lambda)
-		min(lambda)
-		max(lambda)
-		range(lambda)		
+		ae = require('arrayExtentions.js')		// include the module (but not attach to Arrays)
 
-		// statistics
-		desc()
-		median(lambda)
-		mode(lambda)
-		variance(lambda)
-		covariance(lambda1, lambda2)
-		correlation(lambda1, lambda2)
+		ae.sum(myArray, 'Amount') 				// returns the sum of the Amount column
 
-		// data manipulation		
-		toObject()			
-		distinct(lambda)
-		agg(operations) 
-		df() 
-
-		// sql like functions
-		select(columns, aliases)
-		leftJoin(other, leftKeySelector, rightKeySelector, resultSelector)
-		innerJoin(other, leftKeySelector, rightKeySelector, resultSelector)
-
-
-    After including this module, these functions are available 
-	on all arrays (they're added to the Array.prototype) so 
-	you can just call them on any array after including the 
-	arrayExtentions module: 
 	
-		arrayExtentions = require('arrayExtentions.js')
-		[1,2,3,4,5].sum() // sum function is now available on all arrays
+    Examples:	
+
+		// Simple functions		
+		[1,2,3,4,5].sum() 
 
 		arr1 = [1,2,3,4,5]
 		arr1.sum()
@@ -51,22 +40,92 @@ function README(){
 		arr3 = [{a : 1, b: 2}, {a : 2, b : 3}, {a : 3, b : 4}]
 		arr3.sum(e => e.a * e.b)
 
+		// Aggregations
+		arr4 = [{a : 1, b: 2}, {a : 2, b : 3}, {a : 3, b : 4}]
+		arr4.agg({ a : group, b : sum }) 
+		arr4.agg({ a : group, b : sum, c : min }) 
 
+		please note the symbols used for the operations that are added to global scope to make the syntax work:
+			group : group by this column
+			sum   : sum the values in this column
+			min   : minimum value in this column
+			max   : maximum value in this column
+			count : number of rows
+			avg   : average value in this column
+			stdev : standard deviation of the values in this column		
+
+		// Joins
+		left = [{a : 1, b: 2}, {a : 2, b : 3}, {a : 3, b : 4}]
+		right = [{a : 1, c: 5}, {a : 2, c : 6}, {a : 3, c : 7}]
+
+		left.leftJoin(right, 'a')
+		left.leftJoin(right, e => e.a, e => e.a)
+
+		left.innerJoin(right, 'a')
+		left.innerJoin(right, l => l.a, r => r.a)
+
+		// Dataframes
+		// convert an array of objects into an object of arrays, where every property of the object becomes an array
+		// the arrays make it easier to apply functions to columns
+		// columns is a string with property names separated by comma's		
+		arr7 = [{a : 1, b: 2}, {a : 2, b : 3}, {a : 3, b : 4}]
+		arr7.df()
+		arr7.df('a,b')
+
+		// Descriptive statistics
+		// returns an array { Column, Min, Max, Sum, Avg, Stdev, Count } that describes the array
+		arr8 = [{a : 1, b: 2}, {a : 2, b : 3}, {a : 3, b : 4}]
+		arr8.desc()
 
 	Methods are implemented using Kahan's algorithm to get precise results 
-	for larger arrays.
-
-		
+	for larger arrays.		
 
 	*/
 }
 
-Array.prototype.count = function (filter) {	
-	if(!filter) return this.length;
-	return this.filter(filter).length;
+exports.README = README;
+exports.attachExtentions = attachExtentions;
+
+exports.count = f_count;
+exports.sum = f_sum;
+exports.min = f_min;
+exports.max = f_max;
+exports.range = range;
+
+exports.avg = f_avg;
+exports.stdev = f_stdev;
+exports.median = median;
+exports.mode = mode;
+exports.variance = variance;
+exports.covariance = covariance;
+exports.correlation = correlation;
+
+exports.toObject = toObject;
+exports.unique = unique;
+exports.desc = desc;
+exports.agg = agg;
+exports.select = select;
+exports.leftJoin = leftJoin;
+exports.innerJoin = innerJoin;
+exports.df = df;
+
+// these are the operations that can be used in the agg function
+// this allows the { column : operation } syntax to work because the operations are defined as symbols
+group = Symbol('group');
+sum = Symbol('sum');
+min = Symbol('min');
+max = Symbol('max');
+count = Symbol('count');
+avg = Symbol('avg');
+stdev = Symbol('stdev');
+
+function f_count (array, filter) {	
+	if(!filter) return array.length;
+	return array.filter(filter).length;
 }
 
-Array.prototype.sum = function (lambda) {
+
+function f_sum(array, lambda) {
 	// lamdba is either
 	// empty, to sum up values: myArr.sum() 
 	// a string with the property name to sum up for an array of objects (table) myArr.sum('Amount') 
@@ -81,10 +140,10 @@ Array.prototype.sum = function (lambda) {
 	let sum = 0.0;
 	let c = 0.0; // A running compensation for lost low-order bits.
 
-	for (let i = 0; i < this.length; i++) {
+	for (let i = 0; i < array.length; i++) {
 		
 		// If a lambda function is provided, use it to get the value; otherwise, use the array value directly.
-		let value = lambda ? lambda(this[i]) : this[i];
+		let value = lambda ? lambda(array[i]) : array[i];
 
 		// sum with Kahan's algorithm to get correct results for larger arrays
 		let y = value - c;
@@ -96,7 +155,7 @@ Array.prototype.sum = function (lambda) {
 	return sum;
 }
 
-Array.prototype.avg = function (lambda) {
+function f_avg (array, lambda) {
 	// lamdba is either a string with the property name or a lambda function that returns the value to sum	
 
 	// convert a string to a lambda function
@@ -106,10 +165,10 @@ Array.prototype.avg = function (lambda) {
 	}
 
 	// compute the average by dividing the sum by the number of elements
-	return this.sum(lambda) / this.length;
+	return array.sum(lambda) / array.length;
 }
 
-Array.prototype.stdev = function (lambda) {
+function f_stdev(array, lambda) {
 	// lamdba is either a string with the property name or a lambda function that returns the value to sum
 	
 	// convert a string to a lambda function
@@ -118,22 +177,22 @@ Array.prototype.stdev = function (lambda) {
 		lambda = e => e[prop];	// force to copy to string b/c we converting the variable to a lambda 	
 	}	
 
-	let avg = this.avg(lambda);
+	let avg = array.avg(lambda);
 	let sum = 0.0;
 	let c = 0.0; // A running compensation for lost low-order bits.
 
-	for (let i = 0; i < this.length; i++) {
-		let value = lambda ? lambda(this[i]) : this[i];
+	for (let i = 0; i < array.length; i++) {
+		let value = lambda ? lambda(array[i]) : array[i];
 		let y = value - avg;
 		let t = sum + y * y;
 		c = (t - sum) - y * y;
 		sum = t;
 	}
 
-	return Math.sqrt(sum / (this.length - 1));
+	return Math.sqrt(sum / (array.length - 1));
 }
 
-Array.prototype.min = function (lambda) {
+function f_min(array, lambda) {
 	// lamdba is either a string with the property name or a lambda function that returns the value to sum
 	
 	// convert a string to a lambda function
@@ -143,14 +202,14 @@ Array.prototype.min = function (lambda) {
 	}
 
 	let min = Number.MAX_VALUE;
-	for (let i = 0; i < this.length; i++) {
-		let value = lambda ? lambda(this[i]) : this[i];
+	for (let i = 0; i < array.length; i++) {
+		let value = lambda ? lambda(array[i]) : array[i];
 		min = Math.min(min, value);
 	}
 	return min;
 }
 
-Array.prototype.max = function (lambda) {
+function f_max(array, lambda) {
 	// lamdba is either a string with the property name or a lambda function that returns the value to sum
 	
 	// convert a string to a lambda function
@@ -160,14 +219,14 @@ Array.prototype.max = function (lambda) {
 	}
 
 	let max = Number.MIN_VALUE;
-	for (let i = 0; i < this.length; i++) {
-		let value = lambda ? lambda(this[i]) : this[i];
+	for (let i = 0; i < array.length; i++) {
+		let value = lambda ? lambda(array[i]) : array[i];
 		max = Math.max(max, value);
 	}
 	return max;
 }
 
-Array.prototype.range = function (lambda) {
+function range(array, lambda) {
 	// lamdba is either a string with the property name or a lambda function that returns the value to sum
 	
 	// convert a string to a lambda function
@@ -176,10 +235,10 @@ Array.prototype.range = function (lambda) {
 		lambda = e => e[prop];	// force to copy to string b/c we converting the variable to a lambda 	
 	}
 
-	return this.max(lambda) - this.min(lambda);
+	return array.max(lambda) - array.min(lambda);
 }
 
-Array.prototype.median = function (lambda) {	
+function median(array, lambda) {	
 	// lamdba is either a string with the property name or a lambda function that returns the value to sum
 	
 	// convert a string to a lambda function
@@ -188,12 +247,12 @@ Array.prototype.median = function (lambda) {
 		lambda = e => e[prop];	// force to copy to string b/c we converting the variable to a lambda 	
 	}
 
-	let sorted = this.sort(lambda);
+	let sorted = array.sort(lambda);
 	let mid = Math.floor(sorted.length / 2);
 	return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 }
 
-Array.prototype.mode = function (lambda) {
+function mode(array, lambda) {
 	// lamdba is either a string with the property name or a lambda function that returns the value to sum
 	
 	// convert a string to a lambda function
@@ -205,8 +264,8 @@ Array.prototype.mode = function (lambda) {
 	let counts = {};
 	let max = 0;
 	let mode = [];
-	for (let i = 0; i < this.length; i++) {
-		let value = lambda ? lambda(this[i]) : this[i];
+	for (let i = 0; i < array.length; i++) {
+		let value = lambda ? lambda(array[i]) : thiarrays[i];
 		if (!counts[value]) counts[value] = 0;
 		counts[value]++;
 		if (counts[value] > max) {
@@ -220,7 +279,7 @@ Array.prototype.mode = function (lambda) {
 	return mode;
 }
 
-Array.prototype.variance = function (lambda) {
+function variance(array, lambda) {
 	// lamdba is either a string with the property name or a lambda function that returns the value to sum
 	
 	// convert a string to a lambda function
@@ -229,22 +288,22 @@ Array.prototype.variance = function (lambda) {
 		lambda = e => e[prop];	// force to copy to string b/c we converting the variable to a lambda 	
 	}
 
-	let avg = this.avg(lambda);
+	let avg = array.avg(lambda);
 	let sum = 0.0;
 	let c = 0.0; // A running compensation for lost low-order bits.
 
-	for (let i = 0; i < this.length; i++) {
-		let value = lambda ? lambda(this[i]) : this[i];
+	for (let i = 0; i < array.length; i++) {
+		let value = lambda ? lambda(array[i]) : array[i];
 		let y = value - avg;
 		let t = sum + y * y;
 		c = (t - sum) - y * y;
 		sum = t;
 	}
 
-	return sum / (this.length - 1);	
+	return sum / (array.length - 1);	
 }
 
-Array.prototype.covariance = function (lambda1, lambda2) {
+function covariance(array, lambda1, lambda2) {
 	// lamdba is either a string with the property name or a lambda function that returns the value to sum
 	
 	// convert a string to a lambda function
@@ -257,24 +316,24 @@ Array.prototype.covariance = function (lambda1, lambda2) {
 		lambda2 = e => e[prop2];	// force to copy to string b/c we converting the variable to a lambda 	
 	}
 
-	let avg1 = this.avg(lambda1);
-	let avg2 = this.avg(lambda2);
+	let avg1 = array.avg(lambda1);
+	let avg2 = array.avg(lambda2);
 	let sum = 0.0;
 	let c = 0.0; // A running compensation for lost low-order bits.
 
-	for (let i = 0; i < this.length; i++) {
-		let value1 = lambda1 ? lambda1(this[i]) : this[i];
-		let value2 = lambda2 ? lambda2(this[i]) : this[i];
+	for (let i = 0; i < array.length; i++) {
+		let value1 = lambda1 ? lambda1(array[i]) : array[i];
+		let value2 = lambda2 ? lambda2(array[i]) : array[i];
 		let y = (value1 - avg1) * (value2 - avg2);
 		let t = sum + y;
 		c = (t - sum) - y;
 		sum = t;
 	}
 
-	return sum / (this.length - 1);
+	return sum / (array.length - 1);
 }
 
-Array.prototype.correlation = function (lambda1, lambda2) {
+function correlation(array, lambda1, lambda2) {
 	
 	// lamdba is either a string with the property name or a lambda function that returns the value to sum
 	
@@ -288,16 +347,16 @@ Array.prototype.correlation = function (lambda1, lambda2) {
 		lambda2 = e => e[prop2];	// force to copy to string b/c we converting the variable to a lambda 	
 	}
 
-	let covariance = this.covariance(lambda1, lambda2);
+	let covariance = array.covariance(lambda1, lambda2);
 	console.log(covariance);
-	let stdev1 = this.stdev(lambda1);
+	let stdev1 = array.stdev(lambda1);
 	console.log(stdev1);	
-	let stdev2 = this.stdev(lambda2);
+	let stdev2 = array.stdev(lambda2);
 	console.log(stdev2);
 	return covariance / (stdev1 * stdev2);	
 }
 
-Array.prototype.toObject = function (keySelector) {
+function toObject(array, keySelector) {
 	// creates an object from an array of objects, using the values of a specified column as keys
 	// this makes it easy and fast to look up objects by key	
 
@@ -308,8 +367,8 @@ Array.prototype.toObject = function (keySelector) {
 	}
 
 	let dict = {};
-	for (let i = 0; i < this.length; i++) {
-		let key = keySelector(this[i][keyColumn]);
+	for (let i = 0; i < array.length; i++) {
+		let key = keySelector(array[i][keyColumn]);
 			
 		dict[key] = value;
 	}
@@ -317,7 +376,7 @@ Array.prototype.toObject = function (keySelector) {
 }
 
 // unique values for a column
-Array.prototype.unique = function (lambda) {
+function unique(array, lambda) {
 
 	// convert a string to a lambda function
 	if(typeof lambda === 'string') {
@@ -326,18 +385,18 @@ Array.prototype.unique = function (lambda) {
 	}
 
 	let distinct = [];
-	for (let i = 0; i < this.length; i++) {
-		let value = lambda ? lambda(this[i]) : this[i];
+	for (let i = 0; i < array.length; i++) {
+		let value = lambda ? lambda(thiarrays[i]) : array[i];
 		if (distinct.indexOf(value) === -1) distinct.push(value);
 	}
 	return distinct;
 }
 
 // returns an array { Column, Min, Max, Sum, Avg, Stdev, Count } that describes the array
-Array.prototype.desc = function () {	
+function desc(array) {	
 
-	let df = this.df()
-	return Object.entries(df).map(([column, values]) => (
+	let dfr = df(array)
+	return Object.entries(dfr).map(([column, values]) => (
 		{ 
 			Column: column, 
 			Min:  values.min(), 
@@ -350,15 +409,7 @@ Array.prototype.desc = function () {
 	}));	
 }
 
-// these are the operations that can be used in the agg function
-// this allows the { column : operation } syntax to work because the operations are defined as symbols
- group = Symbol('group');
- sum = Symbol('sum');
- min = Symbol('min');
- max = Symbol('max');
- count = Symbol('count');
- avg = Symbol('avg');
- stdev = Symbol('stdev');
+
 
 function kahanSum(array) {
     let sum = 0.0;
@@ -372,7 +423,7 @@ function kahanSum(array) {
     return sum;
 }
 
-Array.prototype.agg = function(operations) {
+function agg(array, operations) {
 	/*
 	Operations is a object where each property is a column name and the value is the operation to perform on that column.
 	for instance myArray.agg({ Account : group, Amount : sum }) will return an array of objects with unique accounts and the sum of the amounts for each account.
@@ -387,7 +438,7 @@ Array.prototype.agg = function(operations) {
 	*/
     const result = {};
 
-    this.forEach(item => {
+    array.forEach(item => {
         const key = JSON.stringify(Object.keys(operations).map(k => {
             if (item.hasOwnProperty(k) && operations[k] === group) {
                 return item[k];
@@ -463,7 +514,7 @@ Array.prototype.agg = function(operations) {
     return Object.values(result);
 }
 
-Array.prototype.select = function (columns, aliases=columns) {	
+function select(array, columns, aliases=columns) {	
 	// creates an array of objects with only the specified columns
 	// columns is a string with property names separated by comma's
 	// aliases is a string with aliases for the columns separated by comma's
@@ -473,41 +524,67 @@ Array.prototype.select = function (columns, aliases=columns) {
 	
 	
 	let result = [];
-	for (let i = 0; i < this.length; i++) {
+	for (let i = 0; i < array.length; i++) {
 		let item = {};
 		for (let j = 0; j < columns.length; j++) {
 			let column = columns[j];
 			let alias = aliases[j];
-			item[alias] = this[i][column];
+			item[alias] = array[i][column];
 		}
 		result.push(item);
 	}
 	return result;
 }
 
-Array.prototype.leftJoin = function (rightArray, leftKeySelector, rightKeySelector, resultSelector) {
+function leftJoin(array, rightArray, leftKey, rightKey) {		
+
+	// someArray.join(otherArray, 'columnName') 					// if column names are the same	
+	// someArray.join(otherArray, 'columnName1', 'columnName2')		// if column names are different
+	// someArray.join(otherArray, l => l.columnName1, r => r.columnName2) // using lambdas (for instance if property is nested)
+
+	// leftKeySelector is either a string with the property name or a lambda function that returns the value to sum
+	// rightKeySelector is either a string with the property name or a lambda function that returns the value to sum
 	
-	let result = [];
-	for (let i = 0; i < this.length; i++) {
-		let left = this[i];
-		let leftKey = leftKeySelector(left);
-		let right = rightArray.filter(e => rightKeySelector(e) === leftKey);
-		let resultItem = resultSelector(left, right);
-		result.push(resultItem);
+	if(typeof leftKey === 'string' ){
+		let propl = '' + leftKey;	// force to copy to string b/c we converting the variable to a lambda
+		leftKey = e => e[propl];	// force to copy to string b/c we converting the variable to a lambda 	
 	}
+	if(!rightKey) rightKey = leftKey;
+	if(typeof rightKey === 'string' ){
+		let propr = '' + rightKey;	// force to copy to string b/c we converting the variable to a lambda
+		rightKey = e => e[propr];	// force to copy to string b/c we converting the variable to a lambda 	
+	}
+
+	let result = [];
+	for (let i = 0; i < array.length; i++) {
+		let left = array[i];
+		let leftId = leftKey(left);
+		let right = rightArray.filter(e => rightKey(e) === leftId);		
+		result.push({...left, ...right});
+	}
+
 	return result;
 }
 
-Array.prototype.innerJoin = function (other, leftKeySelector, rightKeySelector, resultSelector) {
+function innerJoin(array, other, leftKeySelector, rightKeySelector) {
 	
+	if(typeof leftKeySelector === 'string'){
+		let propl = '' + leftKeySelector;	// force to copy to string b/c we converting the variable to a lambda
+		leftKeySelector = e => e[propl];	// force to copy to string b/c we converting the variable to a lambda 	
+	}
+	if(!rightKeySelector)	rightKeySelector = leftKeySelector;
+	if(typeof rightKeySelector === 'string' ){
+		let propr = '' + rightKeySelector;	// force to copy to string b/c we converting the variable to a lambda
+		rightKeySelector = e => e[propr];	// force to copy to string b/c we converting the variable to a lambda 	
+	}
+
 	let result = [];
-	for (let i = 0; i < this.length; i++) {
-		let left = this[i];
-		let leftKey = leftKeySelector(left);
-		let right = other.filter(e => rightKeySelector(e) === leftKey);
-		if (right.length > 0) {
-			let resultItem = resultSelector(left, right);
-			result.push(resultItem);
+	for (let i = 0; i < array.length; i++) {
+		let left = array[i];
+		let leftId = leftKeySelector(left);
+		let right = other.filter(e => rightKeySelector(e) === leftId);
+		if (right.length > 0) {			
+			result.push({...left, ...right});
 		}
 	}
 	return result;
@@ -515,19 +592,46 @@ Array.prototype.innerJoin = function (other, leftKeySelector, rightKeySelector, 
 }
 
 
-Array.prototype.df = function(columns=null){
+function df(array, columns=null){
+
+	// myArray.df() // convert all columns
+	// myArray.df('Name, Age, City') // convert only these columns
 
 	// covert an array of objects into an object of arrays, where every property of the object becomes an array
 	// columns is a string with property names separated by comma's
 	// if omitted, all properties of the object are used
 
-	let df = {};
-	let keys = columns ? columns.split(',') : Object.keys(this[0]);
+	let dfr = {};
+	let keys = columns ? columns.split(',') : Object.keys(array[0]);
 	for (let i = 0; i < keys.length; i++) {
 		let key = keys[i];
-		df[key] = this.map(e=>e[key]);
+		dfr[key] = array.map(e=>e[key]);
 	}
-	return df;
+	return dfr;
 }
 
-exports.README = README;
+function attachExtentions(){
+	// attach the extentions to the Array.prototype
+	Array.prototype.count = function(filter) { return f_count(this, filter) };
+	Array.prototype.sum = function(lambda) { return f_sum(this, lambda) }
+	Array.prototype.min = function(lambda) { return f_min(this, lambda) }
+	Array.prototype.max = function(lambda) { return f_max(this, lambda) }
+	Array.prototype.range = function(lambda) { return range(this, lambda) }
+
+	Array.prototype.avg = function(lambda) { return f_avg(this, lambda) }
+	Array.prototype.stdev = function(lambda) { return f_stdev(this, lambda) }
+	Array.prototype.median = function(lambda) { return median(this, lambda) }
+	Array.prototype.mode = function(lambda) { return mode(this, lambda) }
+	Array.prototype.variance = function(lambda) { return variance(this, lambda) }
+	Array.prototype.covariance = function(lambda1, lambda2) { return covariance(this, lambda1, lambda2) }
+	Array.prototype.correlation = function(lambda1, lambda2) { return correlation(this, lambda1, lambda2) }
+
+	Array.prototype.toObject = function(keySelector) { return toObject(this, keySelector) }
+	Array.prototype.unique = function(lambda) { return unique(this, lambda) }
+	Array.prototype.desc = function() { return desc(this) }
+	Array.prototype.agg = function(operations) { return agg(this, operations) }
+	Array.prototype.select = function(columns, aliases) { return select(this, columns, aliases) }
+	Array.prototype.leftJoin = function(other, leftKeySelector, rightKeySelector, resultSelector) { return leftJoin(this, other, leftKeySelector, rightKeySelector, resultSelector) }
+	Array.prototype.innerJoin = function(other, leftKeySelector, rightKeySelector, resultSelector) { return innerJoin(this, other, leftKeySelector, rightKeySelector, resultSelector) }
+	Array.prototype.df = function(columns) { return df(this, columns) }
+}
