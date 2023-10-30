@@ -522,18 +522,61 @@ function select(array, columns, aliases=columns) {
 	// myArray.select('Name, Age, City')
 	// myArray.select('Name, Age, City', 'Name, Years, Location')
 	
+	const columns2 = columns.split(',').map(s => s.trim());
+	const aliases2 = aliases.split(',').map(s => s.trim());
 	
 	let result = [];
 	for (let i = 0; i < array.length; i++) {
 		let item = {};
-		for (let j = 0; j < columns.length; j++) {
-			let column = columns[j];
-			let alias = aliases[j];
+		for (let j = 0; j < columns2.length; j++) {
+			let column = columns2[j];
+			let alias = aliases2[j];
 			item[alias] = array[i][column];
 		}
 		result.push(item);
 	}
 	return result;
+}
+
+function sortBy(array, properties) {
+    if (typeof properties !== 'string') {
+        throw new Error("Properties should be provided as a comma-separated string.");
+    }
+
+    const propArray = properties.split(',').map(prop => prop.trim());
+
+    array.sort((a, b) => {
+        for (let prop of propArray) {
+            if (!a.hasOwnProperty(prop) || !b.hasOwnProperty(prop)) {
+                throw new Error(`Property ${prop} not found on items.`);
+            }
+
+            let aValue = a[prop];
+            let bValue = b[prop];
+
+            if (typeof aValue !== typeof bValue) {
+                throw new Error("Mismatched property types.");
+            }
+
+            if (typeof aValue === 'string') {
+                const comparison = aValue.localeCompare(bValue);
+                if (comparison !== 0) return comparison;
+            } else if (typeof aValue === 'number') {
+                if (aValue !== bValue) return aValue - bValue;
+            } else if (typeof aValue === 'boolean') {
+                if (aValue !== bValue) return aValue ? -1 : 1;
+            } else if (aValue instanceof Date) {
+                const dateA = aValue.getTime();
+                const dateB = bValue.getTime();
+                if (dateA !== dateB) return dateA - dateB;
+            } else {
+                throw new Error(`Unsupported property type: ${typeof aValue}.`);
+            }
+        }
+        return 0; // If all properties are equal
+    });
+
+    return array;
 }
 
 function leftJoin(array, rightArray, leftKey, rightKey) {		
@@ -631,6 +674,7 @@ function attachExtentions(){
 	Array.prototype.desc = function() { return desc(this) }
 	Array.prototype.agg = function(operations) { return agg(this, operations) }
 	Array.prototype.select = function(columns, aliases) { return select(this, columns, aliases) }
+	Array.prototype.sortBy = function(properties) { return sortBy(this, properties) }
 	Array.prototype.leftJoin = function(other, leftKeySelector, rightKeySelector, resultSelector) { return leftJoin(this, other, leftKeySelector, rightKeySelector, resultSelector) }
 	Array.prototype.innerJoin = function(other, leftKeySelector, rightKeySelector, resultSelector) { return innerJoin(this, other, leftKeySelector, rightKeySelector, resultSelector) }
 	Array.prototype.df = function(columns) { return df(this, columns) }

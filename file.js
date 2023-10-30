@@ -1,11 +1,11 @@
 function read(path){
-    var json = xlc.fileRead(path)
+    let json = xlc.fileRead(path)
     return JSON.parse(json)
 }
 
 function write(path, item){    
     // item: can be any javascript variable, string, int, object, array etc
-    json = JSON.stringify(item)
+    let json = JSON.stringify(item)
     xlc.fileWrite(path, json)
 }
 
@@ -27,6 +27,7 @@ function folderDelete(path, force = false){
     xlc.folderDelete(path, force)
 }
 
+// export functions
 exports.read = read
 exports.write = write 
 exports.delete = fdelete

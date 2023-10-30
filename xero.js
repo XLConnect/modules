@@ -179,7 +179,7 @@ function readColHeaders(header){
 			case "Unassigned" : return ua
 			default : 
 				let tcs = h.Value.split(',').map(tc => tc.trim())
-				return { tc1 : tcs[0], tc2 : tcs[1] }
+				return { tc1 : tcs[0], tc2 : tcs[1] ?? "Unassigned" }
 		}
 	})
 }
