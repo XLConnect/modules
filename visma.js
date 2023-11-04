@@ -44,10 +44,13 @@ function README(){
 	Visma.Net library to help you quickly grab your company data from the Visma.Net api.
 	Please note this does not include all API's, only the often used ones.
 	
-	See the API full description here:
-	https://integration.visma.net/API-index/
+	Browse the spec in Javascript Studio to see all API's, their parameters and DTO formats:
+	spec = visma.swaggerSpec()
 
-	The functions all have a single argement 'args', which can be either: 
+	Same API online here: 
+	https://integration.visma.net/API-index/
+	
+	The wrapper functions all have a single argement 'args', which can be either: 
 
 		1) omitted or null, in which case all records are returned. 
 		visma.account() 
