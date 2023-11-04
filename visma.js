@@ -166,7 +166,7 @@ function swaggerSpec(){
 	Returns the swagger spec of the Visma api from https://integration.visma.net/API-index/doc/swagger
 	this allows you to browse (and sort, click on the name column) the spec and see the required dto formats 
 
-	recommended usage:
+	recommended usage (paste into code window and execute line by line with F8)
 		spec = visma.swaggerSpec()
 		spec.paths['/controller/api/v2/salesorder'].post
 
