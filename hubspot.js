@@ -1,20 +1,33 @@
 "use strict"
 
 const http = require('http.js')
-const baseUri = 'https://api.hubapi.com/crm/v3/objects/'
+const baseURL = 'https://api.hubapi.com/'
 
-function deals(){
-    return callAPi('deals')
+function deals(args=null){
+    return callAPi('crm/v3/objects/deals', args)
 }
-function companies(){
-    return callAPi('companies')
+function companies(args=null){
+    return callAPi('crm/v3/objects/companies', args)
 }
-function contacts(){
-    return callAPi('contacts')
+function contacts(args=null){
+    return callAPi('crm/v3/objects/contacts', args)
 } 
 
+function line_items(args=null){
+	return callAPi('crm/v3/objects/line_items', args)
+}
+
+function quotes(args=null){
+	return callAPi('crm/v3/objects/quotes', args)
+}
+
+
+function schemas(args=null){
+	return callAPi('crm/v3/schemas', args)
+}
+
 function patchDeal(dealId, properties){
-    let uri =  baseUri + `/deals/${dealId}`
+    let uri =  baseURL + `crm/v3/objects/deals/${dealId}`
     let patchDeal = { 
         properties : properties
     }
@@ -22,10 +35,10 @@ function patchDeal(dealId, properties){
 }
 
 function deleteDealLineItems(dealId){
-    const uri = baseUri + `/deals/${dealId}/associations/line_items`
+    const uri = baseURL + `crm/v3/objects/deals/${dealId}/associations/line_items`
     const lines = http.get(uri, null, 'hubspot')
     for(const line of lines.results){
-        xlc.delete(baseUri + `line_items/${line.id}`, null, 'hubspot')
+        xlc.delete(baseURL + `line_items/${line.id}`, null, 'hubspot')
     }
 }
 
@@ -76,12 +89,21 @@ function writeDealLineItems(dealId, lines){
 exports.deals 		= deals
 exports.companies 	= companies
 exports.contacts 	= contacts
+exports.line_items 	= line_items
+exports.quotes 		= quotes
+exports.schemas 	= schemas
+
 exports.patchDeal 	= patchDeal
 exports.deleteDealLineItems = deleteDealLineItems
 exports.writeDealLineItems = writeDealLineItems
-exports.callAPi 	= callAPi
 
-function callAPi(api){
+
+
+exports.baseURL 	= baseURL
+exports.callAPi 	= callAPi
+exports.buildUri 	= buildUri
+
+function callAPi(api, args){
 
 	// variables
 	let result = []
@@ -91,7 +113,7 @@ function callAPi(api){
 	while(true) {
 		
 		// construct uri
-		let uri = baseUri + '/' + api +  '?limit=100'
+		let uri = buildUri(api, args)
 		if(after) uri += '&after=' + after
 	
 		// call api and aggregate intermediate results
@@ -107,4 +129,23 @@ function callAPi(api){
 	}
 	
 	return result
+}
+
+function buildUri(api, args) {
+
+	let uri = baseURL + api +  '?limit=100'
+
+	if (args) {		
+		if (typeof args === 'object') { // loop object and add to uri as query parameters 			
+			let query = Object
+				.entries(args)
+				.map(([key, value]) => key + '=' + value)
+				.join('&')	
+			return uri + (query.length > 0 ? '?' + query : '')					
+		} else {			
+			return uri += '/' + args // add value to uri as path
+		}
+	} 
+	
+	return uri		
 }

@@ -1,6 +1,7 @@
 "use strict"
 
 let http = require('http.js')
+
 const v1Base = 'https://integration.visma.net/API/controller/api/v1/'
 const v2Base = 'https://integration.visma.net/API/controller/api/v2/'
 const apiBase = 'https://integration.visma.net/API/controller/api/'
@@ -42,8 +43,9 @@ function README(){
 
 	Visma.Net library to help you quickly grab your company data from the Visma.Net api.
 	Please note this does not include all API's, only the often used ones.
-	See the API full description here: https://integration.visma.net/API-index/
-	The code should give an example how to call other API's if you need them.
+	
+	See the API full description here:
+	https://integration.visma.net/API-index/
 
 	The functions all have a single argement 'args', which can be either: 
 
@@ -57,16 +59,29 @@ function README(){
 		calls https://integration.visma.net/API/controller/api/v1/account/123
 		returns the account with id 123
 
-		3) a javascript object, in which case the key-value combinations are appended to the url as query parameters
+		3) an object, in which case the key-value combinations are appended to the url as query parameters
 		visma.account({ active : true })
 		calls https://integration.visma.net/API/controller/api/v1/account?active=true
 		returns all active accounts
 
 	Please note that is you need to call an api that does not yet have a wrapper 
-	you can create the uri and call http.get() directly:
+	you can use callAPI: 
+
+		visma.callAPI('v1/account', { active : true })
+		This is litterally how the other wrappers are implemented, we only did the most common ones to not clutter the code.
+
+	Or, if you prefer to build the uri yourself, you can use getAllPages() to get all pages for an api that implements paging:
+
+		visma.getAllPages('https://integration.visma.net/API/controller/api/v1/account', null, 'Pulling accounts')
+	
+	Finally, you can also call the API's directly using http.get() or even raw xlc.get() if you need complete control. Please note you will need to implement paging yourself. 
 
 		uri = 'https://integration.visma.net/API/controller/api/v1/account'
 		http.get(uri, null, 'visma.net')
+		http.http('get', uri, null, 'visma.net') 	// this gives you access to the reply headers 
+
+		xlc.get(uri, null, 'visma.net').Result 		// this gives you access to the raw reply, this can be useful is the reply is not valid json like ""
+		xlc.http('get', uri, null, 'visma.net') 	// same but with the headers 
 
 	If you do, please take note that some API's implement paging, for those you can use the getAllPages() function
 
@@ -83,9 +98,12 @@ exports.purchaseOrder 	= purchaseOrder
 exports.inventory 		= inventory
 exports.journalTransactionV2 = journalTransactionV2
 
+exports.baseURL 		= v1Base
 exports.callAPi 		= callAPi
 exports.buildUri 		= buildUri
 exports.getAllPages 	= getAllPages
+exports.swaggerSpec 	= swaggerSpec
+
 
 function callAPi(api, args, entity){	
 	const uri = buildUri(apiBase + api, args) 					// expand args to uri
@@ -140,4 +158,36 @@ function getAllPages(uri, hds, progressMesage, auth='visma.net'){
 		pageNumber++ 					// next page		
 
 	}	
+}
+
+function swaggerSpec(){
+
+/*
+	Returns the swagger spec of the Visma api from https://integration.visma.net/API-index/doc/swagger
+	this allows you to browse (and sort, click on the name column) the spec and see the required dto formats 
+
+	recommended usage:
+		spec = visma.swaggerSpec()
+		spec.paths['/controller/api/v2/salesorder'].post
+
+		// if you look here for instance
+		spec.paths['/controller/api/v2/salesorder'].post.parameters[0].schema.$ref
+
+		// it will show the dto type 
+		"#/definitions/SalesOrderUpdateDto"
+
+		// then that type can be found here (change the / to . )
+		spec.definitions.SalesOrderUpdateDto
+
+		// the DtoValueOfXXx types ...
+		spec.definitions.DtoValueOfInt16
+
+		// ... mean they should be entered like this: 
+		{
+			value : 123
+		}
+*/
+
+	return http.get('https://integration.visma.net/API-index/doc/swagger')
+
 }
