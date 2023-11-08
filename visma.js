@@ -42,13 +42,24 @@ function README(){
 	/*
 
 	Visma.Net library to help you quickly grab your company data from the Visma.Net api.
-	Please note this does not include all API's, only the often used ones.
+	Please note that the most often used api's are wrapped in helper functions you can drag and drop into your code.
+	For instance, to get all accounts you can simply call:
+
+		salesOrders = visma.salesOrder()
+		salesOrders = visma.salesOrder(123) 				// a single value is appended to the url as a path
+		salesOrders = visma.salesOrder({ status : 'Open' }) // pass in query parameters with an object
+		
+	You can also call this same api (and all others) directly using callAPI, for instance:
+	
+		salesOrders = visma.callAPI('v1/salesorder')
+		salesOrders = visma.callAPI('v1/salesorder', 123)
+		salesOrders = visma.callAPI('v1/salesorder', { status : 'Open' })
 	
 	Browse the spec in Javascript Studio to see all API's, their parameters and DTO formats:
-	spec = visma.swaggerSpec()
 
-	Same API online here: 
-	https://integration.visma.net/API-index/
+		spec = visma.swaggerSpec()
+
+	Same API docs in Swagger GUI here: https://integration.visma.net/API-index/
 	
 	The wrapper functions all have a single argement 'args', which can be either: 
 
@@ -67,8 +78,7 @@ function README(){
 		calls https://integration.visma.net/API/controller/api/v1/account?active=true
 		returns all active accounts
 
-	Please note that is you need to call an api that does not yet have a wrapper 
-	you can use callAPI: 
+	Please note that if you want to call an api that does not yet have a wrapper you can use callAPI: 
 
 		visma.callAPI('v1/account', { active : true })
 		This is litterally how the other wrappers are implemented, we only did the most common ones to not clutter the code.
@@ -140,7 +150,7 @@ function getAllPages(uri, hds, progressMesage, auth='visma.net'){
 	
 	while(true){
 
-		if(progressMesage) xlc.setProgressMessage(progressMesage + (pageNumber > 1 ? ` page ${pageNumber}` : ''))
+		//if(progressMesage) xlc.setProgressMessage(progressMesage + (pageNumber > 1 ? ` page ${pageNumber}` : ''))
 		
 		const paramChar = uri.indexOf('?')===-1 ? '?' : '&'	
 		const tmpUri = uri + `${paramChar}pageSize=${pageSize}&pageNumber=${pageNumber}`	// just add paging to all calls, they get ignored if not implemented
