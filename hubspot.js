@@ -38,7 +38,8 @@ function deleteDealLineItems(dealId){
     const uri = baseURL + `crm/v3/objects/deals/${dealId}/associations/line_items`
     const lines = http.get(uri, null, 'hubspot')
     for(const line of lines.results){
-        xlc.delete(baseURL + `line_items/${line.id}`, null, 'hubspot')
+		
+        xlc.delete(baseURL + 'crm/v3/objects/line_items/' + line.id, null, 'hubspot')
     }
 }
 
@@ -55,7 +56,7 @@ function writeDealLineItems(dealId, lines){
 	for(const line of lines){
 		if(!line.name) throw 'line.name is required: ' + JSON.stringify(line)
 		//if(!line.price) throw 'line.price is required: ' + JSON.stringify(line)
-		if(!line.quantity) throw 'line.quantity is required: ' + JSON.stringify(line)
+		//if(line.quantity == null) throw 'line.quantity is required: ' + JSON.stringify(line)
 	}
 
 	// convert lines to hubspot format
@@ -78,9 +79,9 @@ function writeDealLineItems(dealId, lines){
 			}
 		]
 	}))
-
+	console.log(dealLines)
 	// write lines 
-	const linesUri =  `https://api.hubapi.com/crm/v3/objects/line_item`
+	const linesUri =  baseURL + 'crm/v3/objects/line_item'
 	for(const line of dealLines){	
 		const x = http.post(linesUri, line, null, 'hubspot').Result
 	}
