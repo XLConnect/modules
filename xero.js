@@ -220,6 +220,41 @@ function balanceSheet(tenantId, period, accountingBasis = "Accrual") {
     return rows;
 }
 
+function trialBalance(tenantId, date, paymentsOnly = false) {
+
+    let dateYYYMMDD = util.parseAnyDate(date).toISOString().substring(0,10)  
+
+    let uri = baseURL + "Reports/TrialBalance?date=" + dateYYYMMDD;
+    if (paymentsOnly) uri += "&paymentsOnly=true";
+
+    let hds = xeroHeader(tenantId);
+
+    let tb = http.get(uri, hds, "xero");
+
+    let rows = [];
+    for (let row of tb.Reports[0].Rows) {
+        if (row.RowType == "Section") {
+            for (let row2 of row.Rows) {
+                if (row2.Cells[0].Attributes != undefined) {
+                    rows.push(
+                        { 
+                            Account   : row2.Cells[0].Value,                     
+                            AccountID : row2.Cells[0].Attributes[0].Value,
+                            Period    : date,
+                            Debit     : row2.Cells[1].Value,
+                            Credit    : row2.Cells[2].Value,
+                            YTDDebit  : row2.Cells[3].Value,
+                            YTDCredit : row2.Cells[4].Value,
+                        }
+                    );
+                }
+            }
+        }
+    }
+
+    return rows;
+}
+
 /**
  * Pull journals from datalake
  * @param {string} tenantId
@@ -526,6 +561,7 @@ exports.taxRates = taxRates;
 exports.periods = periods;
 exports.profitAndLoss = profitAndLoss;
 exports.balanceSheet = balanceSheet;
+exports.trialBalance = trialBalance;
 exports.syncJournals = syncJournals;
 exports.pullJournals = pullJournals;
 exports.sourceLabel = sourceLabel;

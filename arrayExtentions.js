@@ -1,6 +1,9 @@
 function README(){
     /* 
 
+	EXPERIMANTAL: This module is still in development, has not been tested completely and may change in the future without notice. 
+	USE WITH CAUTION
+	
 	Helper functions to make it easier to work with arrays and arrays of objects (aka tables).
 	They are similar to the functions in the pandas library for python.
 
