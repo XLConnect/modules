@@ -36,7 +36,11 @@ function parseAnyDate(date){
     }
 }
 
-function endOfMonth(startDate, months) {
+function eOMonth(startDate, months) {
+
+    // Return the last day of the month, months after the start date
+    // Equivalent to Excel's EOMONTH function
+    // startDate can be a string, Excel date number or JS Date object
 
     // Parse the start date
     const jsDate = parseAnyDate(startDate);
@@ -50,10 +54,28 @@ function endOfMonth(startDate, months) {
     return newDate;
 }
 
+function YYYY_MM_DD(anyDate){
+    // return a date string in the format YYYY-MM-DD
+    // anyDate can be a string, Excel date number or JS Date object
+
+    let jsDate = parseAnyDate(anyDate);
+    return jsDate.toISOString().slice(0,10);
+}
+
+function YYYY_MM(anyDate){
+    // return a month string in the format YYYY-MM
+    // anyDate can be a string, Excel date number or JS Date object
+
+    let jsDate = parseAnyDate(anyDate);
+    return jsDate.toISOString().slice(0,7);
+}
+
 exports.parseExcelDate = parseExcelDate;
 exports.toExcelDate = toExcelDate;
 exports.parseUnixDate = parseUnixDate;
 exports.toUnixDate =toUnixDate;
 exports.isoDate = isoDate;
 exports.parseAnyDate = parseAnyDate;
-exports.endOfMonth = endOfMonth;
+exports.eOMonth = eOMonth;
+exports.YYYY_MM_DD = YYYY_MM_DD;
+exports.YYYY_MM = YYYY_MM;

@@ -550,6 +550,49 @@ function Organisation(tenantId) {
     return org.Organisations[0]
 }
 
+function budgets(tenantId, fromDate, toDate){
+
+    const hds = xeroHeader(tenantId)
+    const from = util.YYYY_MM(fromDate)
+    const to = util.YYYY_MM(toDate)
+        
+    const uri = 'https://api.xero.com/api.xro/2.0/Budgets'
+    const budgets = http.get(uri, hds, 'xero')
+    const tcs = xero.trackingCategories(tenantId)
+        
+    let result = []
+    //budget = budgets.Budgets[0]
+    for(const budget of budgets.Budgets){
+        
+        // grab budget details 
+        const uri2 = uri + "/" + budget.BudgetID + '?fromDate=2023-01&toDate=2023-12'
+        const data = http.get(uri2, hds, 'xero')	
+        const full = data.Budgets[0]
+        
+        // extract tracking codes 
+        const t = full.Tracking 
+        const tc1 = t[0]?.Option ?? 'Unassigned'
+        const tc2 = t[1]?.Option ?? 'Unassigned' 
+        
+        // push to result 	
+        for(const line of full.BudgetLines){		
+            for (const balance of line.BudgetBalances){
+                result.push({
+                    Budget : full.Description,
+                    Period : balance.Period,
+                    AccountCode : line.AccountCode,				
+                    Amount : balance.Amount,
+                    TC1 : tc1, 
+                    TC2 : tc2
+                })
+            }		
+        }
+    }
+    
+    return result
+}
+
+
 // exports
 exports.connections = connections;
 exports.getMarkedTenantId = getMarkedTenantId;
@@ -562,8 +605,10 @@ exports.periods = periods;
 exports.profitAndLoss = profitAndLoss;
 exports.balanceSheet = balanceSheet;
 exports.trialBalance = trialBalance;
+exports.budgets = budgets;
 exports.syncJournals = syncJournals;
 exports.pullJournals = pullJournals;
 exports.sourceLabel = sourceLabel;
 exports.typeLabel = typeLabel;
 exports.parseXeroDate = parseXeroDate;
+exports.xeroHeader = xeroHeader;
