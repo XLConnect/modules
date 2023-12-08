@@ -558,7 +558,6 @@ function budgets(tenantId, fromDate, toDate){
         
     const uri = 'https://api.xero.com/api.xro/2.0/Budgets'
     const budgets = http.get(uri, hds, 'xero')
-    const tcs = xero.trackingCategories(tenantId)
         
     let result = []
     //budget = budgets.Budgets[0]
@@ -578,12 +577,12 @@ function budgets(tenantId, fromDate, toDate){
         for(const line of full.BudgetLines){		
             for (const balance of line.BudgetBalances){
                 result.push({
-                    Budget : full.Description,
-                    Period : balance.Period,
+                    Budget  : full.Description,
+                    Period  : balance.Period,
                     AccountCode : line.AccountCode,				
-                    Amount : balance.Amount,
-                    TC1 : tc1, 
-                    TC2 : tc2
+                    Amount  : balance.Amount,
+                    TC1     : tc1, 
+                    TC2     : tc2
                 })
             }		
         }
