@@ -2,8 +2,6 @@
 
 let http = require('http.js')
 
-const v1Base = 'https://integration.visma.net/API/controller/api/v1/'
-const v2Base = 'https://integration.visma.net/API/controller/api/v2/'
 const apiBase = 'https://integration.visma.net/API/controller/api/'
 
 function account(args=null, entity=null){
@@ -111,7 +109,7 @@ exports.purchaseOrder 	= purchaseOrder
 exports.inventory 		= inventory
 exports.journalTransactionV2 = journalTransactionV2
 
-exports.baseURL 		= v1Base
+exports.apiBase 		= apiBase
 exports.callAPi 		= callAPi
 exports.buildUri 		= buildUri
 exports.getAllPages 	= getAllPages

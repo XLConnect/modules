@@ -553,18 +553,18 @@ function Organisation(tenantId) {
 function budgets(tenantId, fromDate, toDate){
 
     const hds = xeroHeader(tenantId)
-    const from = util.YYYY_MM(fromDate)
-    const to = util.YYYY_MM(toDate)
+    const from = util.YYYY_MM_DD(fromDate)
+    const to = util.YYYY_MM_DD(toDate)
         
     const uri = 'https://api.xero.com/api.xro/2.0/Budgets'
     const budgets = http.get(uri, hds, 'xero')
         
     let result = []
-    //budget = budgets.Budgets[0]
     for(const budget of budgets.Budgets){
         
         // grab budget details 
-        const uri2 = uri + "/" + budget.BudgetID + '?fromDate=2023-01&toDate=2023-12'
+        const uri2 = uri + `/${budget.BudgetID}?DateFrom=${from}&DateTo=${to}`
+        console.log(uri2)
         const data = http.get(uri2, hds, 'xero')	
         const full = data.Budgets[0]
         
@@ -577,12 +577,13 @@ function budgets(tenantId, fromDate, toDate){
         for(const line of full.BudgetLines){		
             for (const balance of line.BudgetBalances){
                 result.push({
-                    Budget  : full.Description,
-                    Period  : balance.Period,
+                    Budget      : full.Description,
+                    Period      : balance.Period,
+                    AccountID   : line.AccountID,
                     AccountCode : line.AccountCode,				
-                    Amount  : balance.Amount,
-                    TC1     : tc1, 
-                    TC2     : tc2
+                    Amount      : balance.Amount,
+                    TC1         : tc1, 
+                    TC2         : tc2
                 })
             }		
         }
