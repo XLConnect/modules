@@ -32,7 +32,7 @@ function parseAnyDate(date){
     } else if (typeof date === 'number'){        
         return parseExcelDate(date);        
     } else if (date instanceof Date){
-        return date;
+        return new Date(date);
     }
 }
 
@@ -45,13 +45,12 @@ function eOMonth(startDate, months) {
     // Parse the start date
     const jsDate = parseAnyDate(startDate);
   
-    // Add the months
-    let newDate = new Date(jsDate.getFullYear(), jsDate.getMonth() + months + 1, 1);
-    
-    // Go back one day to get the last day of the desired month
-    newDate.setDate(newDate.getDate() - 1);
-  
-    return newDate;
+    // do date math 
+    jsDate.setDate(15); // set to middle of current month for edge cases like leap years    
+    jsDate.setMonth(jsDate.getMonth() + months + 1); // add months and one more     
+    jsDate.setUTCHours(0,0,0,0); // adding months can change the timezone, so reset it to midnight
+    jsDate.setDate(0); // go back to last day of previous month    
+    return jsDate;
 }
 
 function YYYY_MM_DD(anyDate){

@@ -114,6 +114,8 @@ exports.callAPi 		= callAPi
 exports.buildUri 		= buildUri
 exports.getAllPages 	= getAllPages
 exports.swaggerSpec 	= swaggerSpec
+exports.clientCredentials = clientCredentials
+exports.clientCredentialsStaging = clientCredentialsStaging
 
 
 function callAPi(api, args, entity){	
@@ -202,3 +204,22 @@ function swaggerSpec(){
 	return http.get('https://integration.visma.net/API-index/doc/swagger')
 
 }
+
+function clientCredentials(client_id, client_secret, tenant_id, scope){	
+	const uri = 'https://connect.visma.com/connect/token'
+	const headers = { 'content-type' : 'application/x-www-form-urlencoded' }
+	const content = `grant_type=client_credentials&scope=${scope}&client_id=${client_id}&client_secret=${client_secret}&tenant_id=${tenant_id}`
+	const resj = xlc.post(uri, content, headers).Result
+	const res = JSON.parse(resj)	
+	return res
+}
+
+function clientCredentialsStaging(client_id, client_secret, tenant_id, scope){	
+	const uri = 'https://connect.identity.stagaws.visma.com/connect/token'
+	const headers = { 'content-type' : 'application/x-www-form-urlencoded' }
+	const content = `grant_type=client_credentials&scope=${scope}&client_id=${client_id}&client_secret=${client_secret}&tenant_id=${tenant_id}`
+	const resj = xlc.post(uri, content, headers).Result
+	const res = JSON.parse(resj)	
+	return res
+}
+

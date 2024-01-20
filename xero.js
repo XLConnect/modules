@@ -51,10 +51,23 @@ function getMarkedTenantIds(Connections){
  * @param {string} tenantId
  * @returns
  */
-function accounts(tenantId) {
+function accounts(tenantId, addFXGROUPID=false) {
     let uri = baseURL + "Accounts";
     let h = xeroHeader(tenantId);
-    return http.get(uri, h, "xero").Accounts;
+    let accs =  http.get(uri, h, "xero").Accounts;
+
+    if(addFXGROUPID){
+        accs.push({
+            "AccountID" : "FXGROUPID",
+            "Code"      : "FXGROUPID",
+            "Name"      : "Unrealised Currency Gains",
+            "Status"    : "ACTIVE",
+            "Type"      : "EXPENSE",            
+            "Class"     : "EXPENSE"
+        })
+    }    
+
+    return accs;
 }
 
 /**
@@ -118,7 +131,7 @@ function trackingCategories(tenantId){
  * @param {*} tc1Id 
  * @param {*} tc2Id 
  */
-function profitAndLoss(tenantId, tenantName, fromDate, toDate, accountingBasis, tc1Id, tc2Id) {    
+function profitAndLoss(tenantId, tenantName, fromDate, toDate, accountingBasis='Accrual', tc1Id=null, tc2Id=null) {    
    
     let uri = `${baseURL}Reports/ProfitAndLoss?fromDate=${fromDate}&toDate=${toDate}`
     if (accountingBasis.toLowerCase() == "cash") uri += "&paymentsOnly=true";

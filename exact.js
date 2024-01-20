@@ -114,16 +114,20 @@ function getAllPages(uri, loginAlias){
 
     let alias = loginAlias || _defaultLoginAlias
     let auth = 'exact' + (alias ? ':' + alias : '')
-    //console.log(alias)
 
     let tot = []
     while(true){
         console.log(uri)
-        const result = http.get(uri, hds, auth).d.results.map(({ __metadata, ...rest }) => rest) // remove __metadata
-        tot = tot.concat(result)
+        const result = http.get(uri, hds, auth).d // 
+		
+		// accumulate results
+		const dat = result.results.map(({ __metadata, ...rest }) => rest) // remove __metadata
+        tot.push(dat)
+		
+		// check for next page 
         if(!result.__next) break
         uri = result.__next
     }   
 
-    return tot
+    return tot.flat()
 }
