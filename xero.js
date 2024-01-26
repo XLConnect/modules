@@ -51,12 +51,12 @@ function getMarkedTenantIds(Connections){
  * @param {string} tenantId
  * @returns
  */
-function accounts(tenantId, addFXGROUPID=false) {
+function accounts(tenantId, addComputedAccounts=false) {
     let uri = baseURL + "Accounts";
     let h = xeroHeader(tenantId);
     let accs =  http.get(uri, h, "xero").Accounts;
 
-    if(addFXGROUPID){
+    if(addComputedAccounts){
         accs.push({
             "AccountID" : "FXGROUPID",
             "Code"      : "FXGROUPID",
@@ -64,6 +64,14 @@ function accounts(tenantId, addFXGROUPID=false) {
             "Status"    : "ACTIVE",
             "Type"      : "EXPENSE",            
             "Class"     : "EXPENSE"
+        })
+        accs.push({
+            "AccountID" : "abababab-abab-abab-abab-abababababab",
+            "Code"      : "",
+            "Name"      : "Current Year Earnings",
+            "Status"    : "ACTIVE",
+            "Type"      : "EQUITY",            
+            "Class"     : "EQUITY"
         })
     }    
 
