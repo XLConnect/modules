@@ -141,7 +141,7 @@ function trackingCategories(tenantId){
  */
 function profitAndLoss(tenantId, tenantName, fromDate, toDate, accountingBasis='Accrual', tc1Id=null, tc2Id=null) {    
    
-    let uri = `${baseURL}Reports/ProfitAndLoss?fromDate=${fromDate}&toDate=${toDate}`
+    let uri = `${baseURL}Reports/ProfitAndLoss?StandardLayout=true&fromDate=${fromDate}&toDate=${toDate}`
     if (accountingBasis.toLowerCase() == "cash") uri += "&paymentsOnly=true";
     if(tc1Id) uri += '&trackingCategoryID=' + tc1Id 
     if(tc2Id) uri += '&trackingCategoryID2=' + tc2Id 
@@ -158,7 +158,7 @@ function profitAndLoss(tenantId, tenantName, fromDate, toDate, accountingBasis='
         
         for(const row of section.Rows){
             if(row.Cells[0].Attributes){
-                rows.push(cellsToRows(colHeaders, row.Cells, toDate, tenantName))
+                rows.push(cellsToRows(colHeaders, row.Cells, toDate))
             }	
         }	
     }
@@ -166,7 +166,7 @@ function profitAndLoss(tenantId, tenantName, fromDate, toDate, accountingBasis='
     return rows.flat().filter(r => r.val != 0)
 }
 
-function cellsToRows(headers, cells, period, tenantName){
+function cellsToRows(headers, cells, period){
 	
 	const accountId = cells[0].Attributes[0].Value
 	

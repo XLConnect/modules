@@ -68,6 +68,13 @@ function Divisions(){
     return callAPi(api, null, null, division)
 }
 
+function AllDivisions(){
+    const api = 'system/AllDivisions'
+    const division=currentDivision()
+    console.log(division)
+    return callAPi(api, null, null, division)
+}
+
 function GLAccounts(select=null, filter=null, division=null){
     return callAPi('financial/GLAccounts', select, filter, division)
 }
@@ -90,6 +97,7 @@ exports.README = README
 exports.Me = Me
 exports.defaultLoginAlias = _defaultLoginAlias
 exports.Divisions = Divisions
+exports.AllDivisions = AllDivisions
 exports.GLAccounts = GLAccounts
 exports.ReportingBalance = ReportingBalance
 exports.ProfitLossOverview = ProfitLossOverview
