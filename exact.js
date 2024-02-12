@@ -75,6 +75,12 @@ function AllDivisions(){
     return callAPi(api, null, null, division)
 }
 
+
+function FinancialPeriods(select=null, filter=null, division=null){
+    return callAPi('financial/FinancialPeriods', select, filter, division)
+}
+
+
 function GLAccounts(select=null, filter=null, division=null){
     return callAPi('financial/GLAccounts', select, filter, division)
 }
@@ -98,6 +104,7 @@ exports.Me = Me
 exports.defaultLoginAlias = _defaultLoginAlias
 exports.Divisions = Divisions
 exports.AllDivisions = AllDivisions
+exports.FinancialPeriods = FinancialPeriods
 exports.GLAccounts = GLAccounts
 exports.ReportingBalance = ReportingBalance
 exports.ProfitLossOverview = ProfitLossOverview

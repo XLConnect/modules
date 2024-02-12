@@ -389,7 +389,7 @@ function unique(array, lambda) {
 
 	let distinct = [];
 	for (let i = 0; i < array.length; i++) {
-		let value = lambda ? lambda(thiarrays[i]) : array[i];
+		let value = lambda ? lambda(array[i]) : array[i];
 		if (distinct.indexOf(value) === -1) distinct.push(value);
 	}
 	return distinct;

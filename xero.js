@@ -276,6 +276,16 @@ function trialBalance(tenantId, date, paymentsOnly = false) {
     return rows;
 }
 
+function bankTransactions(tenantId) {
+    let uri = baseURL + "BankTransactions";
+    let hds = xeroHeader(tenantId);
+    let data = http.get(uri, hds, "xero");
+    return data.BankTransactions;
+}
+
+
+
+
 /**
  * Pull journals from datalake
  * @param {string} tenantId
@@ -627,6 +637,7 @@ exports.profitAndLoss = profitAndLoss;
 exports.balanceSheet = balanceSheet;
 exports.trialBalance = trialBalance;
 exports.budgets = budgets;
+exports.bankTransactions = bankTransactions;
 exports.syncJournals = syncJournals;
 exports.pullJournals = pullJournals;
 exports.sourceLabel = sourceLabel;
