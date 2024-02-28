@@ -2,7 +2,6 @@
 
 http = require('http')
 
-let apiKey = null 
 let accountId = null 
 
 function accounts() { return callApi('accounts') }   
@@ -14,15 +13,9 @@ function suppliers() { return callApi('expenses') }
 function taxRates() { return callApi('tax-rates') }
 function teams () { return callApi('teams') }
 
-function callApi(api) {
-    let hds = { 'X-Payhawk-ApiKey' : apiKey }
+function callApi(api) {    
     let uri = 'https://api.payhawk.io/api/v3/accounts/'+ accountId +'/' + api
-    return http.get(uri, hds).items 
-}
-
-function init(key, id) {
-    apiKey = key
-    accountId = id
+    return http.get(uri, null, 'payhawk').items 
 }
 
 // exports 
@@ -38,7 +31,7 @@ exports.taxRates = taxRates
 exports.teams = teams
 
 // internals 
-exports.init = init
+exports.setAccountId = (id) => { accountId = id }
 exports.callApi = callApi
 
 
