@@ -40,12 +40,12 @@ function README(){
 }
 
 const http = require('http.js')
-const base = 'https://start.exactonline.nl/api/v1/'
+const baseUri = 'https://start.exactonline.nl/api/v1/'
 const hds = { 'accept': 'application/json' }
 let _defaultLoginAlias = null // enable multiple logins by allowing user to sepcify token alias
 
 function Me(){
-    const uri = base + 'current/Me'    
+    const uri = baseUri + 'current/Me'    
     let auth = 'exact' + (_defaultLoginAlias ? ':' + _defaultLoginAlias : '')
     console.log(auth)
     console.log(uri)
@@ -109,7 +109,9 @@ exports.GLAccounts = GLAccounts
 exports.ReportingBalance = ReportingBalance
 exports.ProfitLossOverview = ProfitLossOverview
 exports.Journals = Journals
+exports.baseUri = baseUri
 exports.callAPi = callAPi
+exports.query = query
 exports.getAllPages = getAllPages
 
 function callAPi(api, select, filter, division, loginAlias){	
@@ -118,11 +120,20 @@ function callAPi(api, select, filter, division, loginAlias){
     if(!division) division = currentDivision()
 
     // build uri 
-    let uri = base + `${division}/${api}`
+    let uri = baseUri + `${division}/${api}`
     if(select) uri += `?$select=${select}`  
     if(filter) uri += `&$filter=${filter}`
 
     return getAllPages(uri, loginAlias)   
+}
+
+function query(query){
+
+    // this method allows you to paste in the query that was created with the REST API - Reference documentation tool 
+    // https://start.exactonline.nl/docs/HlpRestAPIResources.aspx
+
+    let uri = 'https://start.exactonline.nl' + query
+    return getAllPages(uri, hds, 'exact')    
 }
 
 function getAllPages(uri, loginAlias){
