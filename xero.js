@@ -276,11 +276,22 @@ function trialBalance(tenantId, date, paymentsOnly = false) {
     return rows;
 }
 
-function bankTransactions(tenantId) {
+function bankTransactions(tenantId, fromDate=null, toDate=null) {
+
     let uri = baseURL + "BankTransactions";
     let hds = xeroHeader(tenantId);
-    let data = http.get(uri, hds, "xero");
-    return data.BankTransactions;
+
+    let bts = http.get(uri, hds, "xero").BankTransactions; // tried server-side filtering but it's not working, so we'll do it here    
+
+    if(fromDate) {
+        let fromDate2 = util.parseAnyDate(fromDate)
+        bts = bts.filter(bt => parseXeroDate(bt.Date) >= fromDate2)
+    }
+    if(toDate) {
+        let toDate2 = util.parseAnyDate(toDate)
+        bts = bts.filter(bt => parseXeroDate(bt.Date) <= toDate2)
+    }
+    return bts;
 }
 
 
@@ -642,5 +653,6 @@ exports.syncJournals = syncJournals;
 exports.pullJournals = pullJournals;
 exports.sourceLabel = sourceLabel;
 exports.typeLabel = typeLabel;
+exports.baseURL = baseURL;
 exports.parseXeroDate = parseXeroDate;
 exports.xeroHeader = xeroHeader;
