@@ -98,8 +98,7 @@ exports.patchDeal 	= patchDeal
 exports.deleteDealLineItems = deleteDealLineItems
 exports.writeDealLineItems = writeDealLineItems
 
-
-
+exports.spec 		= spec
 exports.baseURL 	= baseURL
 exports.callAPi 	= callAPi
 exports.buildUri 	= buildUri
@@ -120,6 +119,7 @@ function callAPi(api, args){
 		// call api and aggregate intermediate results
         console.log(uri) 
 		let batch = http.get(uri, null, 'hubspot')
+		if(!Array.isArray(batch)) return batch // no array means no paging 
 		result = result.concat(batch.results)	
 		
 		// see if there's a next page 
@@ -134,10 +134,11 @@ function callAPi(api, args){
 
 function buildUri(api, args) {
 
-	let uri = baseURL + api +  '?limit=100'
+	let uri = baseURL + api //+  '?limit=100'
 
 	if (args) {		
-		if (typeof args === 'object') { // loop object and add to uri as query parameters 			
+		if (typeof args === 'object') { // loop object and add to uri as query parameters 
+			args.limit = 100			
 			let query = Object
 				.entries(args)
 				.map(([key, value]) => key + '=' + value)
@@ -148,5 +149,11 @@ function buildUri(api, args) {
 		}
 	} 
 	
-	return uri		
+	return uri + '?limit=100'
+	
+}
+
+
+function spec(){
+	return http.get('https://api.hubspot.com/api-catalog-public/v1/apis')
 }
