@@ -1,6 +1,6 @@
-"use sctrict"
+"use strict";
 
-http = require('http')
+let http = require('http')
 
 let accountId = null 
 

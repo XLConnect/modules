@@ -133,7 +133,7 @@ function query(query){
     // https://start.exactonline.nl/docs/HlpRestAPIResources.aspx
 
     let uri = 'https://start.exactonline.nl' + query
-    return getAllPages(uri, hds, 'exact')    
+    return getAllPages(uri, null)    
 }
 
 function getAllPages(uri, loginAlias){
