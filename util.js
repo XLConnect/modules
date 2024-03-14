@@ -49,7 +49,7 @@ function eOMonth(startDate, months) {
     jsDate.setDate(15); // set to middle of current month for edge cases like leap years    
     jsDate.setMonth(jsDate.getMonth() + months + 1); // add months and one more     
     jsDate.setUTCHours(0,0,0,0); // adding months can change the timezone, so reset it to midnight
-    jsDate.setDate(0); // go back to last day of previous month    
+    jsDate.setDate(-1); // go back to last day of previous month    
     return jsDate;
 }
 
@@ -69,12 +69,18 @@ function YYYY_MM(anyDate){
     return jsDate.toISOString().slice(0,7);
 }
 
+function utcCToday(){
+    const utd = new Date().setUTCHours(0, 0, 0, 0);
+    return new Date(utd);
+}
+
 exports.parseExcelDate = parseExcelDate;
 exports.toExcelDate = toExcelDate;
 exports.parseUnixDate = parseUnixDate;
 exports.toUnixDate =toUnixDate;
 exports.isoDate = isoDate;
 exports.parseAnyDate = parseAnyDate;
+exports.utcCToday = utcCToday;
 exports.eOMonth = eOMonth;
 exports.YYYY_MM_DD = YYYY_MM_DD;
 exports.YYYY_MM = YYYY_MM;
