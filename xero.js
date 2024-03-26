@@ -635,6 +635,33 @@ function budgets(tenantId, fromDate, toDate){
 }
 
 
+function deepLink(ShortCode, SourceType, SourceID){
+	
+	const base = `https://go.xero.com/organisationlogin/default.aspx?shortcode=${ShortCode}&redirecturl=`
+	const page = sourceTypePage(SourceType)	
+	return base + page + SourceID	
+}
+
+function sourceTypePage(SourceType){
+	switch(SourceType){
+		
+		case 'ACCPAY': return '/AccountsPayable/View.aspx?invoiceID='
+		case 'ACCPAYCREDIT': return '/AccountsPayable/ViewCreditNote.aspx?invoiceID='
+					
+		case 'ACCREC': return '/AccountsReceivable/View.aspx?invoiceID='
+		case 'ACCRECCREDIT': return '/AccountsReceivable/ViewCreditNote.aspx?invoiceID='
+			
+		case 'ACCRECPAYMENT': 			
+		case 'ACCPAYPAYMENT':
+		case 'APCREDITPAYMENT':
+		case 'CASHPAID':
+		case 'CASHREC':
+		case 'TRANSFER': return '/Bank/ViewTransaction.aspx?bankTransactionID='
+
+		case 'MANJOURNAL': return '/Journal/View.aspx?invoiceID='
+	}
+}
+
 // exports
 exports.connections = connections;
 exports.getMarkedTenantId = getMarkedTenantId;
@@ -653,6 +680,7 @@ exports.syncJournals = syncJournals;
 exports.pullJournals = pullJournals;
 exports.sourceLabel = sourceLabel;
 exports.typeLabel = typeLabel;
+exports.deepLink = deepLink;
 exports.baseURL = baseURL;
 exports.parseXeroDate = parseXeroDate;
 exports.xeroHeader = xeroHeader;
