@@ -53,12 +53,13 @@ function writeDealLineItems(dealId, lines){
 	if(!lines) throw 'lines is required'
 	if(!Array.isArray(lines)) throw 'lines must be an array'
 	if(lines.length == 0) throw 'lines must have at least one element'	
+	/*
 	for(const line of lines){
 		if(!line.name) throw 'line.name is required: ' + JSON.stringify(line)
 		//if(!line.price) throw 'line.price is required: ' + JSON.stringify(line)
 		//if(line.quantity == null) throw 'line.quantity is required: ' + JSON.stringify(line)
 	}
-
+*/
 	// convert lines to hubspot format
 	const dealLines = lines.map((l, i) => ({
 		"properties": {

@@ -635,10 +635,9 @@ function budgets(tenantId, fromDate, toDate){
 }
 
 
-function deepLink(ShortCode, SourceType, SourceID){
-	
+function deepLink(ShortCode, SourceType, SourceID){	
 	const base = `https://go.xero.com/organisationlogin/default.aspx?shortcode=${ShortCode}&redirecturl=`
-	const page = sourceTypePage(SourceType)	
+	const page = sourceTypePage(SourceType)	    
 	return base + page + SourceID	
 }
 
