@@ -48,6 +48,11 @@ function read(csv) {
 
   const lines = csv.split(lineBreak);
   const headers = splitLine(lines[0], delimiter, escapeChar).map(header => header.trim().replace(/^"(.*)"$/, '$1'));
+
+  for(let i = 0; i < headers.length; i++) {
+    if(headers[i] == "") headers[i] = "Column" + i;
+  }
+
   const data = lines.slice(1).map(line => {
     const cells = splitLine(line, delimiter, escapeChar).map(cell => cell.trim().replace(/^"(.*)"$/, '$1'));
     const obj = {};
