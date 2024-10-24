@@ -49,7 +49,7 @@ function eOMonth(startDate, months) {
     jsDate.setDate(15); // set to middle of current month for edge cases like leap years    
     jsDate.setMonth(jsDate.getMonth() + months + 1); // add months and one more     
     jsDate.setUTCHours(0,0,0,0); // adding months can change the timezone, so reset it to midnight
-    jsDate.setDate(-1); // go back to last day of previous month    
+    jsDate.setDate(0); // go back to last day of previous month    
     return jsDate;
 }
 

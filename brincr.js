@@ -1,11 +1,12 @@
 "use sctrict";
 
+const http = require('http.js')
 
-function getAllPages(api, limit = 200) {
+function getAllPages(uriBase, auth, limit = 200) {
 	
 	let result = []
-	let paramStart = api.includes('?') ? '&' : '?'
-	let uri = base + api + paramStart + 'limit=' + limit
+	let paramStart = uriBase.includes('?') ? '&' : '?'
+	let uri = uriBase + paramStart + 'limit=' + limit
 		
 	while(true){
 	    console.log(uri)
