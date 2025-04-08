@@ -35,7 +35,8 @@ function list(path='', search=''){
         createdBy : f.createdBy.user.email,
         created : f.createdDateTime,
         lastModifiedBy : f.lastModifiedBy.user.email,
-        lastModified : f.lastModifiedDateTime
+        lastModified : f.lastModifiedDateTime,
+        id : f.id
     }))
 }
 
@@ -44,6 +45,32 @@ function versions(path){
 
     let uri = `https://graph.microsoft.com/v1.0/drives/${this.driveId}/root:/${path}:/versions`
     return get(uri)
+}
+
+function properties(path){
+    // get properties of a file
+    let uri = `https://graph.microsoft.com/v1.0/drives/${this.driveId}/root:/${path}:/`
+    return get(uri)
+}
+
+function propertiesP(paths){
+    
+    // get properties of a file
+    if(!Array.isArray(paths) || paths.some(n => typeof n !== 'string' && !n.path)){
+        throw new Error("Names must be an array of strings or objects with a path property")
+    }
+
+    // if names is an array of objects, convert to array of paths (strings)
+    if(paths.some(n => typeof n !== 'string')){
+        paths = paths.map(n => n.path ?? n)
+    }
+    
+    // create graph batch request
+    const uris = paths.map(name => `https://graph.microsoft.com/v1.0/drives/${this.driveId}/root:/${name}:/`)
+    const calls = uris.map(uri => xlc.get(uri, null, 'spdl'))
+    const results = calls.map(call => JSON.parse(call.Result))
+
+    return results
 }
 
 function read(path){
@@ -133,8 +160,9 @@ function setup() {
                 driveId   : drive.id,
                 driveName : drive.name,
                 driveType : drive.driveType,
+                siteId    : site.id,
                 siteName  : site.name,
-                hostName  : site.siteCollection.hostname
+                hostName  : site.siteCollection?.hostname
             })
         }
     }
@@ -144,10 +172,16 @@ function setup() {
 
 
 exports.driveId = "PLEASE ASSIGN A DRIVE ID, USE setup() TO GET A LIST OF DRIVES AVAILABLE TO YOU";
+
 exports.setup = setup;
+
 exports.get = get;
+
 exports.list = list;
 exports.versions = versions;
+
+exports.properties = properties;
+exports.propertiesP = propertiesP;
 exports.read = read;
 exports.readP = readP;
 exports.write = write;

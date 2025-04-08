@@ -6,6 +6,68 @@ count = Symbol('count');
 avg = Symbol('avg');
 stdev = Symbol('stdev');
 
+function README() {
+	/*
+
+	 genarl usage of the library
+	 1. import the library: 
+	 require('sql') // please not eyou don't have to assign it to a variable, it will automatically add the functions to Arrays
+	 2. call the functions on the array or object you want to work with:
+
+
+	// working with simple arrays *********************************
+	let arrayData = [1, 2, 3, 4, 5];
+	
+	let total = arrayData.sum(); // 15
+	let unique = arrayData.unique(); // [1, 2, 3, 4, 5]
+	let count = arrayData.count(); // 5
+
+	let min = arrayData.min(); // 1
+	let max = arrayData.max(); // 5
+	let average = arrayData.avg(); // 3
+	let stdev = arrayData.stdev(); // 1.58
+
+	let desc = arrayData.desc(); // [5, 4, 3, 2, 1]
+
+
+
+	// working with tables ******************************************
+	let tableData = [
+		{ Name: 'John', Age: 30, City: 'New York', Amount: 100 },
+		{ Name: 'Jane', Age: 25, City: 'Los Angeles', Amount: 200 },
+		{ Name: 'John', Age: 30, City: 'New York', Amount: 150 },
+		{ Name: 'Jane', Age: 25, City: 'Los Angeles', Amount: 300 }
+	];
+
+
+	let totals = objData.agg({ 
+		Name : group, 		
+		Amount : sum 
+	});
+
+	let summed = objData.sum('Amount'); // 650
+	let avged  = objData.avg('Amount'); // 162.5
+	let stdevd = objData.stdev('Amount'); // 70.71
+	let smallest  = objData.min('Amount'); // 100
+	let maxd   = objData.max('Amount'); // 300
+	let countd = objData.count(); // 4
+	let unique = objData.unique('Name'); // ['John', 'Jane']
+	
+	let desc   = objData.desc(); // sort by the first column in descending order
+	
+	let df     = objData.df(); // convert to a dataframe
+	let df2    = objData.df('Name, Age'); // convert to a dataframe with only the Name and Age columns
+	let df3    = objData.df('Name, Age', 'City'); // convert to a dataframe with only the Name and Age columns, grouped by City
+	
+	let obj    = objData.toObject('Name'); // convert to an object with Name as the key and the rest of the object as the value
+	let obj2   = objData.toObject('Name', 'Age'); // convert to an object with Name and Age as the key and the rest of the object as the value
+	let obj3   = objData.toObject('Name', 'Age', 'City'); // convert to an object with Name, Age and City as the key and the rest of the object as the value
+	let obj4   = objData.toObject('Name', 'Age', 'City', 'Amount'); // convert to an object with Name, Age, City and Amount as the key and the rest of the object as the value
+	let obj5   = objData.toObject('Name', 'Age', 'City', 'Amount', 'Date'); // convert to an object with Name, Age, City, Amount and Date as the key and the rest of the object as the value
+
+	*/
+}
+
 function f_sum(array, lambda) {
 	// lamdba is either
 	// empty, to sum up values: myArr.sum() 
