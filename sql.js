@@ -169,6 +169,22 @@ function f_max(array, lambda) {
 	return max;
 }
 
+function unique(array, lambda) {
+
+	// convert a string to a lambda function
+	if(typeof lambda === 'string') {
+		prop = '' + lambda;	// force to copy to string b/c we converting the variable to a lambda
+		lambda = e => e[prop];	// force to copy to string b/c we converting the variable to a lambda 	
+	}
+
+	let distinct = [];
+	for (let i = 0; i < array.length; i++) {
+		let value = lambda ? lambda(array[i]) : array[i];
+		if (distinct.indexOf(value) === -1) distinct.push(value);
+	}
+	return distinct;
+}
+
 function df(array, columns=null){
 
 	// myArray.df() // convert all columns

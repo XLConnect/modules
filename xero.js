@@ -3,6 +3,7 @@
 // import libs
 var http = require("http.js");
 var util = require("util.js");
+var sql = require("sql.js"); 
 
 // constants
 const baseURL = "https://api.xero.com/api.xro/2.0/";
@@ -306,10 +307,14 @@ function bankTransactions(tenantId, fromDate=null, toDate=null) {
  * @param {string} endDate yyyy-mm-dd
  * @returns Array of Objects
  */
-function pullJournals(tenantId, tenantName, accBasis, startDate, endDate) {
+function pullJournals(tenantId, tenantName, accBasis, startDate, endDate, syncFirst = true) {
+
+    xlc.setProgressMessage(`Pulling journals for ${tenantName}...`);
 
     // always sync before pulling it's only a single empty call when there are no new journals and it saves on boilerplate code
-    syncJournals(tenantId, tenantName, accBasis);
+    if(syncFirst){
+        syncJournals(tenantId, tenantName, accBasis);
+    }
 
     // process dates
     const dStart = new Date(startDate);
@@ -320,8 +325,7 @@ function pullJournals(tenantId, tenantName, accBasis, startDate, endDate) {
     const endYear = dEnd.getFullYear();
     const endMonth = dEnd.getMonth() + 1;
 
-    console.log(startDate)
-    console.log(endDate)
+    console.log(`Pulling journals from ${startDate} to ${endDate}`)
 
     // validations
     const checkDate = new Date("1980-01-01");
@@ -340,6 +344,7 @@ function pullJournals(tenantId, tenantName, accBasis, startDate, endDate) {
 
         // read journals
         const periodKey = `${year}-${month}`;
+        console.log('Reading journals file ' + year +'-' + month)
         const filePath = journalsPath(tenantId, accBasis, periodKey)
         const dat = read(filePath);
         if (dat) {
@@ -354,7 +359,7 @@ function pullJournals(tenantId, tenantName, accBasis, startDate, endDate) {
 
                     // conversions
                     jr.JournalDate = parseXeroDate(jr.JournalDate).toISOString().substring(0,10)
-                    jr.CreatedDateUTC = parseXeroDate(jr.CreatedDateUTC).toISOString()
+                    jr.CreatedDateUTC = parseXeroDate(jr.CreatedDateUTC).toISOString()                    
 
                     // Extract TC
                     let tc1 = null;
@@ -380,7 +385,7 @@ function pullJournals(tenantId, tenantName, accBasis, startDate, endDate) {
             month -= 12;
             year++;
         }
-        console.log(year +'-' + month)
+        
         if (year > endYear) break;
         if (year == endYear && month > endMonth) break; // stop pulling files if we're past the end month 
     }
@@ -661,6 +666,229 @@ function sourceTypePage(SourceType){
 	}
 }
 
+function periodsPLBSFromJournals(Connections, endDate, numPeriods, accBasis = 'ACCRUAL', syncFirst = true, skipFXGROUPIDCheck = false) {
+    /*
+
+    Connections: can be either
+        a single tenantId string like '0f01a872-2590-4ea2-b702-1805bf969e8c' to pull a single company or
+        a Connections table with Pull column marked
+    endDate: YYYY-MM-DD
+    numPeriods: number of periods to pull (e.g. 12 for 1 year)
+    accBasis: either 'ACCRUAL' or 'CASH'
+    syncFirst: boolean, if true will sync journals before pulling them
+    skipFXGROUPIDCheck: boolean, if true will skip the check for multiple currencies in the journals
+
+    */
+    // validations ************************************************
+    // check if Connections is an array or a single string 
+    if(!Connections) throw 'Please import a Connections table into the workbook'
+    let conns = []
+    if(Array.isArray(Connections)){
+        conns = Connections.filter(c => c.Pull)
+        if(conns.length < 1) throw 'Please select one tenant to pull'
+    } else {
+        conns = [{ tenantId : Connections }]
+    }
+
+    // endate must be in the format YYYY-MM-DD
+    if(!endDate) throw 'Please provide an endDate'
+    // use regex to assert the date is in the format YYYY-MM-DD
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/
+    if(!dateRegex.test(endDate)) throw 'endDate must be in the format YYYY-MM-DD'
+
+    // numPeriods must be a number greater than 0  
+    if(!numPeriods) throw 'Please provide a number of periods' 
+    if(numPeriods < 1) throw 'numPeriods must be a number greater than 0'
+
+    // accbasis must be either 'ACCRUAL' or 'CASH'
+    if(!['ACCRUAL','CASH'].includes(accBasis)) throw 'accBasis must be either "ACCRUAL" or "CASH"'
+    
+
+    // grab periods and work out some needed dates
+    const periods = xero.periods(endDate, numPeriods + 1).map(p => p.toDate).sort() //  1 extra to get the endDate of previous period
+    const prevEnd = periods[0]
+    periods.shift() // remove the last element we added to get the endDate of the previous period
+    const startDate = periods[0]
+
+    // init 
+    const PL = []
+    const BS = []
+    const TS = []
+    const ACC = []
+    const ORG = []
+    
+    // loop over all connections
+    for(const conn of conns){
+
+        // org details 
+        const org = Organisation(conn.tenantId)
+        
+        // find Current Year Earnings (CYE) reset date
+        const months = periods.map(p => Number(p.split('-')[1]))    
+        const idx = months.indexOf(org.FinancialYearEndMonth)        
+        const cyeResetPeriod = periods[idx]
+        console.log('CYE reset period: ' + cyeResetPeriod)
+
+        // sync journals
+        if(syncFirst){
+            syncJournals(conn.tenantId, org.Name, accBasis)
+        }
+
+        // pull journals for period 
+        const jns = pullJournals(conn.tenantId, org.Name, accBasis, startDate, endDate)
+
+        // validations
+        // check how many currencies we have, we don't do FXGROUPID yet
+        if(!skipFXGROUPIDCheck){ 
+            const currencies = jns.map(j => j.CurrencyCode).unique()
+            if(currencies.length > 1) throw 'Multiple currencies found, code does not support computation of FXGROUPID yet. Set skipFXGROUPIDCheck to true to skip this check.'
+        }
+
+        console.log('Computing..')
+        // add period journals fall into
+        for(let jn of jns){
+            jn.Period = util.YYYY_MM_DD(util.eOMonth(jn.JournalDate, 0))
+            jn.Value = jn.NetAmount
+            jn.DeepLink = deepLink(org.ShortCode, jn.SourceType, jn.SourceID)
+        }
+            
+        // condense
+        const gls = jns.agg({	
+            AccountID 	: group,
+            Period 		: group,
+            TrackingCategory1 : group,
+            TrackingCategory2 : group,
+            Value 	: sum
+        })
+
+        // add account details 
+        const accs = accounts(conn.tenantId, true)
+        for(const gl of gls){
+            const acc = accs.find(a => a.AccountID === gl.AccountID)
+            if(acc){
+                gl.AccountCode = acc.Code,
+                gl.AccountName = acc.Name,
+                gl.Class = acc.Class,
+                gl.Type = acc.Type
+            }
+        }
+
+        // split PL and BS 
+        const plClasses = ["REVENUE","EXPENSE"]
+        const pl = gls.filter(a => plClasses.includes(a.Class))
+        const bs = gls.filter(a => !plClasses.includes(a.Class))
+
+        // condense bs further without TC's (they don't come with the start balnace) 
+        const bs2 = bs
+            .agg({
+                AccountID 	: group,
+                Period 		: group,
+                Class 		: group,
+                Value 		: sum
+            })
+            .sort((a, b) => a.Period > b.Period)
+
+        // grab opening balance 
+        const bsPrev = balanceSheet(conn.tenantId, prevEnd)
+        for(const sb of bsPrev){
+            sb.Period = util.YYYY_MM_DD(sb.Period)
+            sb.Value = Number(sb.Value)
+        }
+
+        // initialize running sum with opening balance 
+        const runningSums = Object.fromEntries(bsPrev.map(sb => [sb.AccountID, sb.Value]))
+
+        // prepare list of accounts
+        const cyeAcc = 'abababab-abab-abab-abab-abababababab' // Current Year Earnings
+        const accountIds = bs2.unique('AccountID').concat(bsPrev.unique('AccountID')).unique()
+        if(!accountIds.includes(cyeAcc)) accountIds.push(cyeAcc)
+
+        const result = [];
+
+        // loop over every account and period to make sure we fill out any gaps where there weren't any transactiosn for an account 
+        let entry = {}
+        periods.forEach(period => {
+            accountIds.forEach(accountId => {
+                
+                if(accountId === cyeAcc){
+                    
+                    // if first period of year, reset running sum 
+                    if(period === cyeResetPeriod) runningSums[accountId] = 0
+                    
+                    const cyeEquity = bs2
+                            .filter(b => b.Period === period && b.Class === 'EQUITY')
+                            .sum('Value')
+                    
+                    const cyeRest = bs2
+                            .filter(b => b.Period === period && b.Class != 'EQUITY')
+                            .sum('Value')			
+                    
+                    entry = {
+                        Class : 'EQUITY',
+                        Value : cyeEquity - cyeRest
+                    }
+                    
+                } else {
+                
+                    // Find journal entry for this account and period
+                    entry = bs2.find(j => 
+                        j.AccountID === accountId && j.Period === period
+                    );
+                }
+            
+                // Update running sum
+                if (!runningSums[accountId]) runningSums[accountId] = 0;
+                
+                if(entry){
+                    // flip sign for Assets (Debit side)			
+                    let value = entry.Class == 'ASSET' ? entry.Value : -entry.Value;		
+                    runningSums[accountId] += value;
+                }     
+
+                result.push({
+                    Period	  : period,
+                    AccountID : accountId,
+                    Value     : Number(runningSums[accountId].toFixed(2))
+                });
+                
+            });	
+        });
+
+        // add account details to BS part again
+        for(const gl of result){
+            const acc = accs.find(a => a.AccountID === gl.AccountID)
+            if(acc){
+                gl.AccounhtCode = acc.Code,
+                gl.AccountName = acc.Name,
+                gl.Class = acc.Class,
+                gl.Type = acc.Type
+            }
+        }
+
+        // add company and add to totals
+        pl.forEach(p => p.Company = org.Name)
+        PL.push(pl)
+        result.forEach(b => b.Company = org.Name)
+        BS.push(result)
+        jns.forEach(j => j.Company = org.Name)
+        TS.push(jns)       
+        accs.forEach(a => a.Company = org.Name)
+        ACC.push(accs)
+        ORG.push(org)
+    }
+
+
+    // voila
+    return {
+        PL : PL.flat(),
+        BS : BS.flat(),
+        TS : TS.flat(),
+        ACC : ACC.flat(),
+        ORG : ORG.flat()
+    }
+}
+
+
 
 
 // exports
@@ -674,6 +902,7 @@ exports.taxRates = taxRates;
 exports.periods = periods;
 exports.profitAndLoss = profitAndLoss;
 exports.balanceSheet = balanceSheet;
+exports.periodsPLBSFromJournals = periodsPLBSFromJournals;
 exports.trialBalance = trialBalance;
 exports.budgets = budgets;
 exports.bankTransactions = bankTransactions;
