@@ -3,7 +3,7 @@
 // import libs
 var http = require("http.js");
 var util = require("util.js");
-var sql = require("sql.js"); 
+require("sql.js"); 
 
 // constants
 const baseURL = "https://api.xero.com/api.xro/2.0/";
@@ -131,15 +131,6 @@ function trackingCategories(tenantId){
     return http.get(uri, hds, "xero").TrackingCategories;
 }
 
-/**
- * 
- * @param {*} tenantId 
- * @param {*} fromDate 
- * @param {*} toDate 
- * @param {*} accountingBasis 
- * @param {*} tc1Id 
- * @param {*} tc2Id 
- */
 function profitAndLoss(tenantId, tenantName, fromDate, toDate, accountingBasis='Accrual', tc1Id=null, tc2Id=null) {    
    
     let uri = `${baseURL}Reports/ProfitAndLoss?StandardLayout=true&fromDate=${fromDate}&toDate=${toDate}`
@@ -888,7 +879,352 @@ function periodsPLBSFromJournals(Connections, endDate, numPeriods, accBasis = 'A
     }
 }
 
+// SECTION INVOICES ******************************************************************************************************************
 
+
+const _invoiceFileTypes = ["Invoices", "CreditNotes", "Overpayments", "Prepayments"] // capitalized to align with contents of json 
+function syncAllInvoiceTypes(tenantId) {
+	for (const fileType of _invoiceFileTypes) syncInvoiceType(tenantId, fileType)
+}
+
+function syncInvoiceType(tenantId, fileType) {
+
+	if (!_invoiceFileTypes.includes(fileType)) throw `Invalid type of invoice: ${fileType}`
+
+	const msg = `Syncing ${fileType}...`
+	xlc.setProgressMessage(msg);
+	console.log(msg);
+	let progress = 0;
+	xlc.setProgressMax(10);
+
+	// read settings from previous run (if there was one)
+	let settingsPath = invoicesPath(tenantId, 'settings')
+	let settings = read(settingsPath);
+	if (!settings) settings = {};
+
+	let lastModifiedDate = getLastCreatedDate(settings, fileType);
+	let invPath = invoicesPath(tenantId, fileType)
+	let data = read(invPath) ?? {}	
+
+	let hds = {
+		"xero-tenant-id": tenantId,
+		"if-modified-since": lastModifiedDate.toUTCString(),
+	}
+
+	const maxDate = (a, b) => a > b ? a : b;
+	// loop over new invoices 
+	const typeID = fileType.slice(0, -1) + "ID"
+	let page = 1
+	while (true) {
+
+		const uri = `https://api.xero.com/api.xro/2.0/${fileType}?page=${page}`
+		console.log(uri)
+		const invs = http.get(uri, hds, 'xero')
+
+		// updaet last modified 
+		if (invs[fileType].length > 0) {
+			const maxModified = invs[fileType]
+				.map(i => xero.parseXeroDate(i.UpdatedDateUTC))
+				.reduce(maxDate);
+
+			lastModifiedDate = maxDate(lastModifiedDate, maxModified)
+		}
+
+		progress++
+		if (progress > 10) progress = 0;
+		xlc.setProgressValue(progress);
+		xlc.setProgressMessage(`Syncing ${fileType} until ${lastModifiedDate.toISOString().slice(0, 10)}`)
+
+		invs[fileType].map(i => data[i[typeID]] = i)
+
+		if (invs[fileType].length < 100) break
+		page++
+
+		if (page % 20 == 0) {
+			// write progress so far, if the process get aborted next pull will start from here 
+			write(invPath, data)
+			setLastCreatedDate(settings, fileType, lastModifiedDate)
+			write(settingsPath, settings)
+		}
+	}
+
+	// close shop 
+	write(invPath, data)
+	setLastCreatedDate(settings, fileType, lastModifiedDate)
+	write(settingsPath, settings)
+
+}
+
+function pullInvoices(tenantId, invoiceType, asAtDate) {
+
+	// validate inputs
+	if (!(invoiceType === 'ACCREC' || invoiceType === 'ACCPAY')) throw 'invoiceType must be a string either ACCREC or ACCPAY'
+	// TODO option to pull AS IS (as at date == null?)
+	//if (!asAtDate instanceof Date) throw 'asAtDate must be a Date'
+    const asAtDate2 = util.parseAnyDate(asAtDate)
+
+	// check cache validity / load data 	
+    const invsPath = invoicesPath(tenantId, 'Invoices')
+    console.log('loading invoices from ' + invsPath)
+    let data = read(invsPath)
+
+	let res = []
+	console.log('start Invoices')
+	for (const inv of Object.values(data)) {
+
+		if(inv.Type != invoiceType) continue;
+		if (inv.Status == 'VOIDED' || inv.Status == 'DELETED'|| inv.Status == 'DRAFT' || inv.Status == 'SUBMITTED') continue;  // TODO how can we determine if invoice was voided at as at date?
+		if (inv.Total == 0) continue; // not interested in 0 invoices 
+
+		// not fully paid -> compute as at state and add to result 
+		let total = xero.parseXeroDate(inv.Date) <= asAtDate2 ? inv.Total : 0 // only count total after Invoice Date 
+		let paid = 0
+		for (const p of inv.Payments) {
+			if (xero.parseXeroDate(p.Date) <= asAtDate2) paid += p.Amount
+		}
+		for (const c of inv.CreditNotes) {
+			if (xero.parseXeroDate(c.Date) <= asAtDate2) paid += c.AppliedAmount
+		}
+		for (const o of inv.Overpayments) {
+			if (xero.parseXeroDate(o.Date) <= asAtDate2) paid += o.AppliedAmount
+		}	
+		for (const p of inv.Prepayments) {
+			if (xero.parseXeroDate(p.Date) <= asAtDate2) paid += p.AppliedAmount
+		}
+
+		if(Math.abs(total - paid) > 0.01 ){
+		
+			res.push({				
+				ID: inv.InvoiceID,
+				Type: inv.Type,
+				TenantId: tenantId,
+				AsAtDate: asAtDate2.toISOString().slice(0, 10),
+				Number: inv.InvoiceNumber,
+				Reference: inv.Reference,
+				StatusToday: inv.Status,
+				ContactName: inv.Contact.Name,
+				ContactID: inv.Contact.ContactID,
+				
+				InvoiceDate: xero.parseXeroDate(inv.Date).toISOString().slice(0, 10),
+				DueDate: xero.parseXeroDate(inv.DueDate).toISOString().slice(0, 10),
+
+				CurrencyCode: inv.CurrencyCode,
+				CurrencyRate: inv.CurrencyRate,
+
+				Total: total,
+				Paid: paid,
+				Remaining: total - paid
+			})
+		}
+	}
+
+	console.log('Invoices completed')
+
+	return res
+}
+
+function pullCreditNotes(tenantId, asAtDate){
+
+	// validate inputs 
+	const asAtDate2 = util.parseAnyDate(asAtDate)
+
+
+	// check/ load cache 	
+    const invsPath = invoicesPath(tenantId, 'CreditNotes')
+    console.log('loading CreditNotes from ' + invsPath)
+    let data = read(invsPath)
+    
+	console.log('start CreditNotes')
+	let res = []
+	for(const cn of Object.values(data)){
+
+		//if (cn.Status == 'VOIDED' || cn.Status == 'DELETED') continue; 
+		if (cn.Status == 'VOIDED' || cn.Status == 'DELETED'|| cn.Status == 'DRAFT' || cn.Status == 'SUBMITTED') continue;  // TODO how can we determine if invoice was voided at as at date?
+
+		let total = new Date(cn.DateString) <= asAtDate2 ? cn.Total : 0 // only count total after Invoice Date 
+		
+		let allocated = 0		
+		for(const pm of cn.Payments){		
+			if(xero.parseXeroDate(pm.Date) <= asAtDate2)allocated += pm.Amount
+		}
+		for(const alloc of cn.Allocations){			
+			if(xero.parseXeroDate(alloc.Date)  <= asAtDate2)allocated += alloc.Amount				
+		}
+		
+		if(Math.abs(total - allocated) > 0.01 ){
+			res.push({				
+				ID: cn.CreditNoteID,
+				Type: cn.Type,
+				TenantId: tenantId,
+				AsAtDate: asAtDate2.toISOString().slice(0, 10),
+				Number: cn.CreditNoteNumber,
+				Reference: cn.Reference,
+				StatusToday: cn.Status,
+				ContactName: cn.Contact.Name,
+				ContactID: cn.Contact.ContactID,
+				
+				InvoiceDate: xero.parseXeroDate(cn.Date).toISOString().slice(0, 10),
+				DueDate: null,
+
+				CurrencyCode: cn.CurrencyCode,
+				CurrencyRate: cn.CurrencyRate,
+
+				Total: total,
+				Paid: allocated,
+				Remaining: total - allocated
+			})
+		}
+	}
+	console.log('CreditNotes completed')
+	return res
+}
+
+function pullOverpayments(tenantId, asAtDate){
+
+	// validate inputs 
+	const asAtDate2 = util.parseAnyDate(asAtDate)
+
+	// check/ load cache 	
+    const invsPath = invoicesPath(tenantId, 'Overpayments')
+    console.log('loading CreditNotes from ' + invsPath)
+    let data = read(invsPath)
+
+	console.log('start Overpayments')
+	let res = []
+	for(const cn of Object.values(data)){
+
+		//if (cn.Status == 'VOIDED' || cn.Status == 'DELETED') continue; 
+		if (cn.Status == 'VOIDED' || cn.Status == 'DELETED'|| cn.Status == 'DRAFT' || cn.Status == 'SUBMITTED') continue;  // TODO how can we determine if invoice was voided at as at date?
+
+		let total = new Date(cn.DateString) <= asAtDate2 ? cn.Total : 0 // only count total after Invoice Date 
+		
+		let allocated = 0		
+		for(const pm of cn.Payments){		
+			if(xero.parseXeroDate(pm.Date) <= asAtDate2)allocated += pm.Amount
+		}
+		for(const alloc of cn.Allocations){			
+			if(xero.parseXeroDate(alloc.Date)  <= asAtDate2)allocated += alloc.Amount				
+		}
+		
+		if(Math.abs(total - allocated) > 0.01 ){
+			res.push({				
+				ID: cn.CreditNoteID,
+				Type: cn.Type,
+				TenantId: tenantId,
+				AsAtDate: asAtDate2.toISOString().slice(0, 10),
+				Number: cn.CreditNoteNumber,
+				Reference: cn.Reference,
+				StatusToday: cn.Status,
+				ContactName: cn.Contact.Name,
+				ContactID: cn.Contact.ContactID,
+				
+				InvoiceDate: xero.parseXeroDate(cn.Date).toISOString().slice(0, 10),
+				DueDate: null,
+
+				CurrencyCode: cn.CurrencyCode,
+				CurrencyRate: cn.CurrencyRate,
+
+				Total: total,
+				Paid: allocated,
+				Remaining: total - allocated
+			})
+		}
+	}
+	console.log('Overpayments completed')
+	return res
+}
+
+function pullPrepayments(tenantId, asAtDate){
+
+	// validate inputs 
+	const asAtDate2 = util.parseAnyDate(asAtDate)
+
+	// check/ load cache 	
+    const invsPath = invoicesPath(tenantId, 'Prepayments')
+    console.log('loading CreditNotes from ' + invsPath)
+    let data = read(invsPath)
+
+	console.log('start Prepayments')
+	let res = []
+	for(const cn of Object.values(data)){
+
+		//if (cn.Status == 'VOIDED' || cn.Status == 'DELETED') continue; 
+		if (cn.Status == 'VOIDED' || cn.Status == 'DELETED'|| cn.Status == 'DRAFT' || cn.Status == 'SUBMITTED') continue;  // TODO how can we determine if invoice was voided at as at date?
+
+		let total = new Date(cn.DateString) <= asAtDate2 ? cn.Total : 0 // only count total after Invoice Date 
+		
+		let allocated = 0		
+		for(const pm of cn.Payments){		
+			if(xero.parseXeroDate(pm.Date) <= asAtDate2)allocated += pm.Amount
+		}
+		for(const alloc of cn.Allocations){			
+			if(xero.parseXeroDate(alloc.Date)  <= asAtDate2)allocated += alloc.Amount				
+		}
+		
+		if(Math.abs(total - allocated) > 0.01 ){
+			res.push({				
+				ID: cn.CreditNoteID,
+				Type: cn.Type,
+				TenantId: tenantId,
+				AsAtDate: asAtDate2.toISOString().slice(0, 10),
+				Number: cn.CreditNoteNumber,
+				Reference: cn.Reference,
+				StatusToday: cn.Status,
+				ContactName: cn.Contact.Name,
+				ContactID: cn.Contact.ContactID,
+				
+				InvoiceDate: xero.parseXeroDate(cn.Date).toISOString().slice(0, 10),
+				DueDate: null,
+
+				CurrencyCode: cn.CurrencyCode,
+				CurrencyRate: cn.CurrencyRate,
+
+				Total: total,
+				Paid: allocated,
+				Remaining: total - allocated
+			})
+		}
+	}
+	console.log('Prepayments completed')
+	return res
+}
+
+function InvoiceCache(){
+	return invoices;
+}
+
+
+function getLastCreatedDate(settings, type) {
+
+	// transitional code, remove after a while 
+	if (type == 'Invoices' && settings.lastCreatedDate) {
+		console.log('updating old settings')
+		settings[type] = settings.lastCreatedDate
+		delete settings.lastCreatedDate
+	}
+
+	// find in settings
+	if (settings[type]) {
+		return new Date(settings[type]);
+	}
+
+	return new Date(1900, 0, 1);
+}
+
+function setLastCreatedDate(settings, type, lastCreatedDate) {
+	settings[type] = lastCreatedDate;
+}
+
+function invoicesPath(tenantId, type) {
+	return `xero/${tenantId}/invoices/${type}.json`
+}
+
+
+/*
+function invoicesPath(tenantId, id) {
+	return `xero/${tenantId}/invoices/${id}.json`
+}
+*/
 
 
 // exports
@@ -914,3 +1250,11 @@ exports.deepLink = deepLink;
 exports.baseURL = baseURL;
 exports.parseXeroDate = parseXeroDate;
 exports.xeroHeader = xeroHeader;
+
+exports.syncInvoiceType = syncInvoiceType;
+exports.syncAllInvoiceTypes = syncAllInvoiceTypes;
+exports.pullInvoices = pullInvoices;
+exports.pullCreditNotes = pullCreditNotes;
+exports.pullOverpayments = pullOverpayments;
+exports.pullPrepayments = pullPrepayments;
+exports.InvoiceCache = InvoiceCache;
