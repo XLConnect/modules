@@ -162,7 +162,7 @@ function setup() {
                 driveType : drive.driveType,
                 siteId    : site.id,
                 siteName  : site.name,
-                //hostName  : site.siteCollection?.hostname
+                hostName  : site.siteCollection?.hostname
             })
         }
     }
