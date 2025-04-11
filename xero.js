@@ -546,8 +546,6 @@ function writeJournals(memFiles, settingsPath, settings, tenantId, accBasis) {
 // wrapper function to read lastCreatedDate from settings for tenantId and AccBasis
 function getLastCreatedDate(settings) {
 
-    console.log('getLastCreatedDate')
-    console.log(settings)
     // find in settings
     if (settings.lastCreatedDate) {
         return new Date(settings.lastCreatedDate);
@@ -645,23 +643,21 @@ function syncBudgets(tenantId){
 
     // find time of last budget sync 
     let settingsPath = budgetsPath(tenantId, 'settings')
-    console.log('settings path: ' + settingsPath)
 
     let settings = read(settingsPath);    
     if (!settings) settings = {};
-    console.log(settings)
 
     let lastCreatedDate = getLastCreatedDate(settings)
-    console.log('Last sync date: ' + lastCreatedDate.toISOString())
     
     const hds = xeroHeader(tenantId)
     const uri = 'https://api.xero.com/api.xro/2.0/Budgets'
     const budgets = http.get(uri, hds, 'xero')
     
-    const changedBudgets = budgets.Budgets.filter(b => parseXeroDate(b.UpdatedDateUTC) > lastCreatedDate).slice(0,2)
+    const changedBudgets = budgets.Budgets.filter(b => parseXeroDate(b.UpdatedDateUTC) > lastCreatedDate)
+
     for(const budget of changedBudgets){
         
-        // grab budget details 
+        // grab budget data 
         const uri2 = uri + `/${budget.BudgetID}`
         console.log('downloading ' + uri2)
         const data = http.get(uri2, hds, 'xero')	
@@ -677,14 +673,50 @@ function syncBudgets(tenantId){
     }
 
     // write settings
-    console.log('Last sync date: ' + lastCreatedDate.toISOString())
     setLastCreatedDate(settings, lastCreatedDate);
-    console.log(settings)
     write(settingsPath, settings);
 
     console.log('Budget Sync fnished ' + tenantId)
     return budgets // return all budgets so we don;t have to call this again     
 
+}
+
+function pullBudgets(tenantId, fromDate, toDate){
+
+    // sync budgets first (we need to make that call to get the last list of budgets and whatever is in there needs to be pulled)
+    budgets = syncBudgets(tenantId)
+    
+    const result = []
+
+    for(const budget of budgets.Budgets){
+
+        // read from cache
+        const fileName = budgetsPath(tenantId, budget.BudgetID)
+        const data = read(fileName)	
+        
+        // extract tracking codes 
+        const t = data.Tracking 
+        const tc1 = t[0]?.Option ?? 'Unassigned'
+        const tc2 = t[1]?.Option ?? 'Unassigned' 
+        
+        // push to result 	
+        for(const line of data.BudgetLines){		
+            for (const balance of line.BudgetBalances){
+                result.push({
+                    Budget      : data.Description,
+                    Period      : balance.Period,
+                    AccountID   : line.AccountID,
+                    AccountCode : line.AccountCode,				
+                    Amount      : balance.Amount,
+                    TC1         : tc1, 
+                    TC2         : tc2
+                })
+            }		
+        }
+
+    }
+
+    return result
 }
 
 function deepLink(ShortCode, SourceType, SourceID){	
@@ -1303,6 +1335,7 @@ exports.periodsPLBSFromJournals = periodsPLBSFromJournals;
 exports.trialBalance = trialBalance;
 exports.budgets = budgets;
 exports.syncBudgets = syncBudgets;
+exports.pullBudgets = pullBudgets;
 exports.bankTransactions = bankTransactions;
 exports.syncJournals = syncJournals;
 exports.pullJournals = pullJournals;
