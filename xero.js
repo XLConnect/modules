@@ -545,6 +545,9 @@ function writeJournals(memFiles, settingsPath, settings, tenantId, accBasis) {
 
 // wrapper function to read lastCreatedDate from settings for tenantId and AccBasis
 function getLastCreatedDate(settings) {
+
+    console.log('getLastCreatedDate')
+    console.log(settings)
     // find in settings
     if (settings.lastCreatedDate) {
         return new Date(settings.lastCreatedDate);
@@ -588,6 +591,8 @@ function Organisation(tenantId) {
     return org.Organisations[0]
 }
 
+
+
 function budgets(tenantId, fromDate, toDate){
 
     const hds = xeroHeader(tenantId)
@@ -630,6 +635,57 @@ function budgets(tenantId, fromDate, toDate){
     return result
 }
 
+function budgetsPath(tenantId, budgetId){
+    return `xero/${tenantId}/budgets/${budgetId}.json`;
+}
+
+function syncBudgets(tenantId){
+
+    console.log('Start Budget Sync for ' + tenantId)
+
+    // find time of last budget sync 
+    let settingsPath = budgetsPath(tenantId, 'settings')
+    console.log('settings path: ' + settingsPath)
+
+    let settings = read(settingsPath);    
+    if (!settings) settings = {};
+    console.log(settings)
+
+    let lastCreatedDate = getLastCreatedDate(settings)
+    console.log('Last sync date: ' + lastCreatedDate.toISOString())
+    
+    const hds = xeroHeader(tenantId)
+    const uri = 'https://api.xero.com/api.xro/2.0/Budgets'
+    const budgets = http.get(uri, hds, 'xero')
+    
+    const changedBudgets = budgets.Budgets.filter(b => parseXeroDate(b.UpdatedDateUTC) > lastCreatedDate).slice(0,2)
+    for(const budget of changedBudgets){
+        
+        // grab budget details 
+        const uri2 = uri + `/${budget.BudgetID}`
+        console.log('downloading ' + uri2)
+        const data = http.get(uri2, hds, 'xero')	
+        const full = data.Budgets[0]
+        
+        // write to disk 
+        const fileName = budgetsPath(tenantId, budget.BudgetID)
+        write(fileName, full);	
+
+        // update lastCreatedDate
+        let journalCreatedDateUTC = parseXeroDate(budget.UpdatedDateUTC)
+        if(journalCreatedDateUTC > lastCreatedDate) lastCreatedDate = journalCreatedDateUTC
+    }
+
+    // write settings
+    console.log('Last sync date: ' + lastCreatedDate.toISOString())
+    setLastCreatedDate(settings, lastCreatedDate);
+    console.log(settings)
+    write(settingsPath, settings);
+
+    console.log('Budget Sync fnished ' + tenantId)
+    return budgets // return all budgets so we don;t have to call this again     
+
+}
 
 function deepLink(ShortCode, SourceType, SourceID){	
 	const base = `https://go.xero.com/organisationlogin/default.aspx?shortcode=${ShortCode}&redirecturl=`
@@ -879,6 +935,7 @@ function periodsPLBSFromJournals(Connections, endDate, numPeriods, accBasis = 'A
     }
 }
 
+
 // SECTION INVOICES ******************************************************************************************************************
 
 
@@ -902,7 +959,7 @@ function syncInvoiceType(tenantId, fileType) {
 	let settings = read(settingsPath);
 	if (!settings) settings = {};
 
-	let lastModifiedDate = getLastCreatedDate(settings, fileType);
+	let lastModifiedDate = getLastInvoiceCreatedDate(settings, fileType);
 	let invPath = invoicesPath(tenantId, fileType)
 	let data = read(invPath) ?? {}	
 
@@ -943,20 +1000,47 @@ function syncInvoiceType(tenantId, fileType) {
 		if (page % 20 == 0) {
 			// write progress so far, if the process get aborted next pull will start from here 
 			write(invPath, data)
-			setLastCreatedDate(settings, fileType, lastModifiedDate)
+			setLastInvoiceCreatedDate(settings, fileType, lastModifiedDate)
 			write(settingsPath, settings)
 		}
 	}
 
 	// close shop 
 	write(invPath, data)
-	setLastCreatedDate(settings, fileType, lastModifiedDate)
+	setLastInvoiceCreatedDate(settings, fileType, lastModifiedDate)
 	write(settingsPath, settings)
 
 }
 
-function pullInvoices(tenantId, invoiceType, asAtDate) {
+function getLastInvoiceCreatedDate(settings, type) {
 
+	// transitional code, remove after a while 
+	if (type == 'Invoices' && settings.lastCreatedDate) {
+		console.log('updating old settings')
+		settings[type] = settings.lastCreatedDate
+		delete settings.lastCreatedDate
+	}
+
+	// find in settings
+	if (settings[type]) {
+		return new Date(settings[type]);
+	}
+
+	return new Date(1900, 0, 1);
+}
+
+function setLastInvoiceCreatedDate(settings, type, lastCreatedDate) {
+	settings[type] = lastCreatedDate;
+}
+
+function invoicesPath(tenantId, type) {
+	return `xero/${tenantId}/invoices/${type}.json`
+}
+
+function pullInvoices(tenantId, invoiceType, asAtDate, syncFirst=true) {
+
+    if(syncFirst) syncInvoiceType(tenantId, 'Invoices')
+    
 	// validate inputs
 	if (!(invoiceType === 'ACCREC' || invoiceType === 'ACCPAY')) throw 'invoiceType must be a string either ACCREC or ACCPAY'
 	// TODO option to pull AS IS (as at date == null?)
@@ -1023,10 +1107,12 @@ function pullInvoices(tenantId, invoiceType, asAtDate) {
 	return res
 }
 
-function pullCreditNotes(tenantId, asAtDate){
+function pullCreditNotes(tenantId, asAtDate, syncFirst=true){
 
 	// validate inputs 
 	const asAtDate2 = util.parseAnyDate(asAtDate)
+
+    if(syncFirst) syncInvoiceType(tenantId, 'CreditNotes')
 
 
 	// check/ load cache 	
@@ -1079,10 +1165,12 @@ function pullCreditNotes(tenantId, asAtDate){
 	return res
 }
 
-function pullOverpayments(tenantId, asAtDate){
+function pullOverpayments(tenantId, asAtDate, syncFirst=true){
 
 	// validate inputs 
 	const asAtDate2 = util.parseAnyDate(asAtDate)
+
+    if(syncFirst) syncInvoiceType(tenantId, 'Overpayments')
 
 	// check/ load cache 	
     const invsPath = invoicesPath(tenantId, 'Overpayments')
@@ -1134,10 +1222,12 @@ function pullOverpayments(tenantId, asAtDate){
 	return res
 }
 
-function pullPrepayments(tenantId, asAtDate){
+function pullPrepayments(tenantId, asAtDate, syncFirst=true){
 
 	// validate inputs 
 	const asAtDate2 = util.parseAnyDate(asAtDate)
+
+    if(syncFirst) syncInvoiceType(tenantId, 'Prepayments')
 
 	// check/ load cache 	
     const invsPath = invoicesPath(tenantId, 'Prepayments')
@@ -1189,35 +1279,6 @@ function pullPrepayments(tenantId, asAtDate){
 	return res
 }
 
-function InvoiceCache(){
-	return invoices;
-}
-
-
-function getLastCreatedDate(settings, type) {
-
-	// transitional code, remove after a while 
-	if (type == 'Invoices' && settings.lastCreatedDate) {
-		console.log('updating old settings')
-		settings[type] = settings.lastCreatedDate
-		delete settings.lastCreatedDate
-	}
-
-	// find in settings
-	if (settings[type]) {
-		return new Date(settings[type]);
-	}
-
-	return new Date(1900, 0, 1);
-}
-
-function setLastCreatedDate(settings, type, lastCreatedDate) {
-	settings[type] = lastCreatedDate;
-}
-
-function invoicesPath(tenantId, type) {
-	return `xero/${tenantId}/invoices/${type}.json`
-}
 
 
 /*
@@ -1241,6 +1302,7 @@ exports.balanceSheet = balanceSheet;
 exports.periodsPLBSFromJournals = periodsPLBSFromJournals;
 exports.trialBalance = trialBalance;
 exports.budgets = budgets;
+exports.syncBudgets = syncBudgets;
 exports.bankTransactions = bankTransactions;
 exports.syncJournals = syncJournals;
 exports.pullJournals = pullJournals;
@@ -1257,4 +1319,3 @@ exports.pullInvoices = pullInvoices;
 exports.pullCreditNotes = pullCreditNotes;
 exports.pullOverpayments = pullOverpayments;
 exports.pullPrepayments = pullPrepayments;
-exports.InvoiceCache = InvoiceCache;
