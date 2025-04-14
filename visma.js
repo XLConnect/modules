@@ -2,7 +2,7 @@
 
 let http = require('http.js')
 
-const apiBase = 'https://integration.visma.net/API/controller/api/'
+const apiBase = 'https://api.finance.visma.net/API/controller/api/'
 
 function account(args=null, entity=null){
 	return callAPi('v1/account', args, entity)
