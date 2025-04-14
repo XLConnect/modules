@@ -647,6 +647,8 @@ function syncBudgets(tenantId){
     let settingsPath = budgetsFolder(tenantId) + 'settings.json'
     let settings = read(settingsPath);    
     if (!settings) settings = {};
+    write(settingsPath, settings); // make sure the folder exists 
+
 
     let lastCreatedDate = getLastCreatedDate(settings)
     
@@ -689,6 +691,15 @@ function syncBudgets(tenantId){
 
 function pullBudgets(tenantId, fromDate, toDate){
     console.log('Budget Pull started ' + tenantId)
+
+    // validations
+    if(!tenantId) throw 'Please provide a tenantId'
+    if(!fromDate) throw 'Please provide a fromDate'
+    if(!fromDate instanceof Date) throw 'fromDate must be a date'
+    if(!toDate) throw 'Please provide a toDate'
+    if(!toDate instanceof Date) throw 'toDate must be a date'
+    if (toDate < fromDate) throw 'fromDate must be before toDate';
+
 
     // sync budgets first (we need to ask for the list of budgets and whatever is in there needs to be pulled)
     const budgets = syncBudgets(tenantId)
