@@ -589,7 +589,7 @@ function Organisation(tenantId) {
     return org.Organisations[0]
 }
 
-
+// REGION BUDGETS **************************************************************************************************************************
 
 function budgets(tenantId, fromDate, toDate){
 
@@ -633,17 +633,18 @@ function budgets(tenantId, fromDate, toDate){
     return result
 }
 
-function budgetsPath(tenantId, budgetId){
-    return `xero/${tenantId}/budgets/${budgetId}.json`;
+function budgetsFolder(tenantId){
+    return `xero/${tenantId}/budgets/`;
 }
 
 function syncBudgets(tenantId){
 
-    console.log('Start Budget Sync for ' + tenantId)
+    // drops cache for changed budgets 
+    // we can;t alreay pull b/c we don't know which periods there are 
+    console.log('Start budget cache drop for ' + tenantId)
 
     // find time of last budget sync 
-    let settingsPath = budgetsPath(tenantId, 'settings')
-
+    let settingsPath = budgetsFolder(tenantId) + 'settings.json'
     let settings = read(settingsPath);    
     if (!settings) settings = {};
 
@@ -656,68 +657,129 @@ function syncBudgets(tenantId){
     const changedBudgets = budgets.Budgets.filter(b => parseXeroDate(b.UpdatedDateUTC) > lastCreatedDate)
 
     for(const budget of changedBudgets){
-        
-        // grab budget data 
-        const uri2 = uri + `/${budget.BudgetID}`
-        console.log('downloading ' + uri2)
-        const data = http.get(uri2, hds, 'xero')	
-        const full = data.Budgets[0]
-        
-        // write to disk 
-        const fileName = budgetsPath(tenantId, budget.BudgetID)
-        write(fileName, full);	
 
-        // update lastCreatedDate
+        // drop changed blocks 
+        const blockPath = budgetsFolder(tenantId)
+        const blockFilter = budget.BudgetID + '*.json'        
+        console.log(blockFilter)
+
+        const blocks = list(blockPath, blockFilter)
+        for(const block of blocks){
+            console.log('Deleting stale cache' + block.block)
+            xlc.fileDelete(block)
+        }
+
+        // download blocks again?
+        // TODO
+
+        // keep track of last seen created date
         let journalCreatedDateUTC = parseXeroDate(budget.UpdatedDateUTC)
         if(journalCreatedDateUTC > lastCreatedDate) lastCreatedDate = journalCreatedDateUTC
+
     }
 
     // write settings
     setLastCreatedDate(settings, lastCreatedDate);
     write(settingsPath, settings);
 
-    console.log('Budget Sync fnished ' + tenantId)
+    console.log('Budget cache drop finished ' + tenantId)
     return budgets // return all budgets so we don;t have to call this again     
 
 }
 
 function pullBudgets(tenantId, fromDate, toDate){
+    console.log('Budget Pull started ' + tenantId)
 
-    // sync budgets first (we need to make that call to get the last list of budgets and whatever is in there needs to be pulled)
-    budgets = syncBudgets(tenantId)
+    // sync budgets first (we need to ask for the list of budgets and whatever is in there needs to be pulled)
+    const budgets = syncBudgets(tenantId)
     
+    // find period blocks for this budget
+    const blocks = periodBlocks(fromDate, toDate)
+
     const result = []
 
     for(const budget of budgets.Budgets){
+        for(const block of blocks){
+            
+            // pull budgets for this block
+            const blockPath = budgetsFolder(tenantId) + budget.BudgetID + '-' + block.block + '.json'
+            let data = read(blockPath)
+            
+            // if block not in cache, pull it from Xero
+            if(data) {
+                console.log('Found cache for budget ' + budget.Name + ' ' + block.block)
+            }else{
+                
+                const uri = 'https://api.xero.com/api.xro/2.0/Budgets/' + budget.BudgetID + '?DateFrom=' + block.startDate + '&DateTo=' + block.endDate
+                
+                const msg = 'Syncing budget ' + budget.Description + ' ' + block.block 
+                console.log(msg + ": " + uri)
+                xlc.setProgressMessage(msg)
 
-        // read from cache
-        const fileName = budgetsPath(tenantId, budget.BudgetID)
-        const data = read(fileName)	
-        
-        // extract tracking codes 
-        const t = data.Tracking 
-        const tc1 = t[0]?.Option ?? 'Unassigned'
-        const tc2 = t[1]?.Option ?? 'Unassigned' 
-        
-        // push to result 	
-        for(const line of data.BudgetLines){		
-            for (const balance of line.BudgetBalances){
-                result.push({
-                    Budget      : data.Description,
-                    Period      : balance.Period,
-                    AccountID   : line.AccountID,
-                    AccountCode : line.AccountCode,				
-                    Amount      : balance.Amount,
-                    TC1         : tc1, 
-                    TC2         : tc2
-                })
-            }		
+                const hds = xeroHeader(tenantId)
+                const reply = http.get(uri, hds, 'xero')
+                data = reply.Budgets[0] // strip header 
+                if(data) write(blockPath, data) // write to disk 
+            } // no data for this block, skip it
+
+            // extract tracking codes 
+            const t = data.Tracking 
+            const tc1 = t[0]?.Option ?? 'Unassigned'
+            const tc2 = t[1]?.Option ?? 'Unassigned' 
+            
+            // push to result 	
+            for(const line of data.BudgetLines){		
+                for (const balance of line.BudgetBalances){
+                    result.push({
+                        Budget      : data.Description,
+                        Period      : balance.Period,
+                        AccountID   : line.AccountID,
+                        AccountCode : line.AccountCode,				
+                        Amount      : balance.Amount,
+                        TC1         : tc1, 
+                        TC2         : tc2
+                    })
+                }		
+            }
         }
 
+
     }
+    console.log('Budget pull finished for ' + tenantId)
 
     return result
 }
+
+// xero will only allow us to pull 24 months of data per call, so we need to work out the periods we need to pull
+function periodBlocks(startDate, endDate) {
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const periods = [];
+    
+    let currentYear = start.getFullYear();
+    // Adjust to previous odd year if necessary to include start year
+    if (currentYear % 2 === 0) {
+        currentYear -= 1;
+    }
+    
+    const endYear = end.getFullYear();
+    
+    while (currentYear <= endYear) {
+        const periodStart = `${currentYear}-01-01`;
+        const periodEnd = `${currentYear + 1}-12-31`;
+        periods.push({
+			block : `${currentYear}-${currentYear+1}`,
+			startDate : util.YYYY_MM_DD(periodStart),
+			endDate : util.YYYY_MM_DD(periodEnd),
+		}),
+		
+        currentYear += 2;
+    }
+    
+    return periods;
+}
+
 
 function deepLink(ShortCode, SourceType, SourceID){	
 	const base = `https://go.xero.com/organisationlogin/default.aspx?shortcode=${ShortCode}&redirecturl=`
@@ -956,8 +1018,9 @@ function periodsPLBSFromJournals(Connections, endDate, numPeriods, accBasis = 'A
         ORG.push(org)
     }
 
+    console.log('Done!')
 
-    // voila
+    // return result
     return {
         PL : PL.flat(),
         BS : BS.flat(),
