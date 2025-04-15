@@ -818,7 +818,7 @@ function sourceTypePage(SourceType){
 	}
 }
 
-function periodsPLBSFromJournals(Connections, endDate, numPeriods, accBasis = 'ACCRUAL', syncFirst = true, skipFXGROUPIDCheck = false) {
+function periodsPLBSFromJournals(Connections, endDate, numPeriods, accBasis = 'ACCRUAL', syncFirst = true, skipFXGROUPIDCheck = false, returnTS=true) {
     /*
 
     Connections: can be either
@@ -887,7 +887,7 @@ function periodsPLBSFromJournals(Connections, endDate, numPeriods, accBasis = 'A
         }
 
         // pull journals for period 
-        const jns = pullJournals(conn.tenantId, org.Name, accBasis, startDate, endDate)
+        const jns = pullJournals(conn.tenantId, org.Name, accBasis, startDate, endDate, false)
 
         // validations
         // check how many currencies we have, we don't do FXGROUPID yet
@@ -1035,7 +1035,7 @@ function periodsPLBSFromJournals(Connections, endDate, numPeriods, accBasis = 'A
     return {
         PL : PL.flat(),
         BS : BS.flat(),
-        TS : TS.flat(),
+        TS : returnTS ? TS.flat() : [],
         ACC : ACC.flat(),
         ORG : ORG.flat()
     }
