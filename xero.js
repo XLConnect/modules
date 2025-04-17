@@ -1010,7 +1010,7 @@ function periodsPLBSFromJournals(Connections, endDate, numPeriods, accBasis = 'A
         for(const gl of result){
             const acc = accs.find(a => a.AccountID === gl.AccountID)
             if(acc){
-                gl.AccounhtCode = acc.Code,
+                gl.AccountCode = acc.Code,
                 gl.AccountName = acc.Name,
                 gl.Class = acc.Class,
                 gl.Type = acc.Type
