@@ -857,10 +857,10 @@ function periodsPLBSFromJournals(Connections, endDate, numPeriods, accBasis = 'A
     
 
     // grab periods and work out some needed dates
-    const periods = xero.periods(endDate, numPeriods + 1).map(p => p.toDate).sort() //  1 extra to get the endDate of previous period
-    const prevEnd = periods[0]
+    const periods = xero.periods(endDate, numPeriods + 1).sort((a, b) => a.toDate.localeCompare(b.toDate)) //  1 extra to get the endDate of previous period
+    const prevEnd = periods[0].toDate
     periods.shift() // remove the last element we added to get the endDate of the previous period
-    const startDate = periods[0]
+    const startDate = periods[0].toDate
 
     // init 
     const PL = []
@@ -876,10 +876,11 @@ function periodsPLBSFromJournals(Connections, endDate, numPeriods, accBasis = 'A
         const org = Organisation(conn.tenantId)
         
         // find Current Year Earnings (CYE) reset date
-        const months = periods.map(p => Number(p.split('-')[1]))    
-        const idx = months.indexOf(org.FinancialYearEndMonth)        
-        const cyeResetPeriod = periods[idx]
-        console.log('CYE reset period: ' + cyeResetPeriod)
+        for(let period of periods){
+            const month = Number(period.toDate.split('-')[1])
+            period.yearEnd = (month === org.FinancialYearEndMonth ? true : false)            
+        }        
+        console.log(periods)
 
         // sync journals
         if(syncFirst){
@@ -965,26 +966,26 @@ function periodsPLBSFromJournals(Connections, endDate, numPeriods, accBasis = 'A
                 if(accountId === cyeAcc){
                     
                     // if first period of year, reset running sum 
-                    if(period === cyeResetPeriod) runningSums[accountId] = 0
+                    if(period.resetCYE) runningSums[accountId] = 0
                     
                     const cyeEquity = bs2
-                            .filter(b => b.Period === period && b.Class === 'EQUITY')
+                            .filter(b => b.Period === period.toDate && b.Class === 'EQUITY')
                             .sum('Value')
                     
                     const cyeRest = bs2
-                            .filter(b => b.Period === period && b.Class != 'EQUITY')
+                            .filter(b => b.Period === period.toDate && b.Class != 'EQUITY')
                             .sum('Value')			
                     
                     entry = {
                         Class : 'EQUITY',
                         Value : cyeEquity - cyeRest
-                    }
+                    }                   
                     
                 } else {
                 
                     // Find journal entry for this account and period
                     entry = bs2.find(j => 
-                        j.AccountID === accountId && j.Period === period
+                        j.AccountID === accountId && j.Period === period.toDate
                     );
                 }
             
@@ -998,12 +999,22 @@ function periodsPLBSFromJournals(Connections, endDate, numPeriods, accBasis = 'A
                 }     
 
                 result.push({
-                    Period	  : period,
+                    Period	  : period.toDate,
                     AccountID : accountId,
                     Value     : Number(runningSums[accountId].toFixed(2))
                 });
+
+                 // if first period of year, reset running sum 
+                 //if(period.yearEnd && accountId === cyeAcc) runningSums[accountId] = 0
                 
             });	
+
+            // year end process
+            if(period.yearEnd){
+                let retEarnAcc = accs.find(a => a.SystemAccount === 'RETAINEDEARNINGS')
+                runningSums[retEarnAcc.AccountID] += runningSums[cyeAcc]
+                runningSums[cyeAcc] = 0 // reset CYE for next year
+            }
         });
 
         // add account details to BS part again
