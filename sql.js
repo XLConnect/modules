@@ -71,8 +71,8 @@ function README() {
 function f_sum(array, lambda) {
 	// lamdba is either
 	// empty, to sum up values: myArr.sum() 
-	// a string with the property name to sum up for an array of objects (table) myArr.sum('Amount') 
-	// a lambda function that returns the value to sum myArr.sum(e => e.Amount * e.Quantity)
+	// a string with the property name to sum up for an array of objects (aka table): myArr.sum('Amount') 
+	// a lambda function that returns the value to sum: myArr.sum(e => e.Amount * e.Quantity)
 	
 	// convert a string to a lambda function
 	if(typeof lambda === 'string') {

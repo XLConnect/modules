@@ -876,9 +876,12 @@ function periodsPLBSFromJournals(Connections, endDate, numPeriods, accBasis = 'A
         const org = Organisation(conn.tenantId)
         
         // find Current Year Earnings (CYE) reset date
+        let fyStartMonth = org.FinancialYearEndMonth + 1
+        if(fyStartMonth > 12) fyStartMonth -= 12 // xero uses 0-11 for months, we need 1-12
+       
         for(let period of periods){
-            const month = Number(period.toDate.split('-')[1])
-            period.yearEnd = (month === org.FinancialYearEndMonth ? true : false)            
+            let month = Number(period.toDate.split('-')[1])             
+            period.fyYearStart = (month === fyStartMonth ? true : false)            
         }        
         console.log(periods)
 
@@ -961,12 +964,27 @@ function periodsPLBSFromJournals(Connections, endDate, numPeriods, accBasis = 'A
         // loop over every account and period to make sure we fill out any gaps where there weren't any transactiosn for an account 
         let entry = {}
         periods.forEach(period => {
+
+             // year end process
+             if(period.fyYearStart){
+                console.log('Year end process for ' + period.toDate)
+                let retEarnAcc = accs.find(a => a.SystemAccount === 'RETAINEDEARNINGS')
+                if(!retEarnAcc) throw 'Could not find system account RETAINEDEARNINGS for tenant ' + conn.tenantName          
+                console.log(runningSums);
+                if (!runningSums[retEarnAcc.AccountID]) runningSums[retEarnAcc.AccountID] = 0;        
+                runningSums[retEarnAcc.AccountID] += runningSums[cyeAcc]
+                runningSums[cyeAcc] = 0 // reset CYE for next year                
+                console.log('Running sums after year end process')
+                console.log(runningSums);
+            }
+
+
             accountIds.forEach(accountId => {
                 
                 if(accountId === cyeAcc){
                     
                     // if first period of year, reset running sum 
-                    if(period.resetCYE) runningSums[accountId] = 0
+                    //if(period.resetCYE) runningSums[accountId] = 0
                     
                     const cyeEquity = bs2
                             .filter(b => b.Period === period.toDate && b.Class === 'EQUITY')
@@ -1009,12 +1027,7 @@ function periodsPLBSFromJournals(Connections, endDate, numPeriods, accBasis = 'A
                 
             });	
 
-            // year end process
-            if(period.yearEnd){
-                let retEarnAcc = accs.find(a => a.SystemAccount === 'RETAINEDEARNINGS')
-                runningSums[retEarnAcc.AccountID] += runningSums[cyeAcc]
-                runningSums[cyeAcc] = 0 // reset CYE for next year
-            }
+           
         });
 
         // add account details to BS part again
@@ -1416,7 +1429,7 @@ exports.taxRates = taxRates;
 exports.periods = periods;
 exports.profitAndLoss = profitAndLoss;
 exports.balanceSheet = balanceSheet;
-exports.periodsPLBSFromJournals = periodsPLBSFromJournals;
+//exports.periodsPLBSFromJournals = periodsPLBSFromJournals;
 exports.trialBalance = trialBalance;
 exports.budgets = budgets;
 exports.syncBudgets = syncBudgets;
