@@ -118,7 +118,7 @@ function callAPi(api, args){
 		// call api and aggregate intermediate results
         console.log(uri) 
 		let batch = http.get(uri, null, 'hubspot')
-		if(!batch.result) return batch // no array means no paging 
+		if(!batch.results) return batch // no array means no paging 
 		result.push(batch.results)	
 		
 		// see if there's a next page 
