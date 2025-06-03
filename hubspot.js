@@ -108,29 +108,27 @@ function callAPi(api, args){
 
 	// variables
 	let result = []
-	let after  = null
+
+	// construct uri
+		let uri = buildUri(api, args)
 	
 	// keep going until no more next page 
-	while(true) {
-		
-		// construct uri
-		let uri = buildUri(api, args)
-		if(after) uri += '&after=' + after
+	while(true) {		
 	
 		// call api and aggregate intermediate results
         console.log(uri) 
 		let batch = http.get(uri, null, 'hubspot')
-		if(!Array.isArray(batch)) return batch // no array means no paging 
-		result = result.concat(batch.results)	
+		if(!batch.result) return batch // no array means no paging 
+		result.push(batch.results)	
 		
 		// see if there's a next page 
 		if(batch.paging) 
-			after = batch.paging.next.after
+			uri = batch.paging.next.link
 		else 
 			break;
 	}
 	
-	return result
+	return result.flat()
 }
 
 function buildUri(api, args) {
