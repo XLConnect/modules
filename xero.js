@@ -718,7 +718,7 @@ function pullBudgets(tenantId, fromDate, toDate){
             
             // if block not in cache, pull it from Xero
             if(data) {
-                console.log('Found cache for budget ' + budget.Name + ' ' + block.block)
+                console.log('Found cache for budget ' + budget.Description + ' ' + block.block)
             }else{
                 
                 const uri = 'https://api.xero.com/api.xro/2.0/Budgets/' + budget.BudgetID + '?DateFrom=' + block.startDate + '&DateTo=' + block.endDate
@@ -932,8 +932,11 @@ function periodsPLBSFromJournals(Connections, endDate, numPeriods, accBasis = 'A
         // split PL and BS 
         const plClasses = ["REVENUE","EXPENSE"]
         const pl = gls.filter(a => plClasses.includes(a.Class))
+
+        /*
         const bs = gls.filter(a => !plClasses.includes(a.Class))
 
+   
         // condense bs further without TC's (they don't come with the start balnace) 
         const bs2 = bs
             .agg({
@@ -1041,11 +1044,13 @@ function periodsPLBSFromJournals(Connections, endDate, numPeriods, accBasis = 'A
             }
         }
 
+        */
+
         // add company and add to totals
         pl.forEach(p => p.Company = org.Name)
         PL.push(pl)
-        result.forEach(b => b.Company = org.Name)
-        BS.push(result)
+        //result.forEach(b => b.Company = org.Name)
+        //BS.push(result)
         jns.forEach(j => j.Company = org.Name)
         TS.push(jns)       
         accs.forEach(a => a.Company = org.Name)
@@ -1058,7 +1063,7 @@ function periodsPLBSFromJournals(Connections, endDate, numPeriods, accBasis = 'A
     // return result
     return {
         PL : PL.flat(),
-        BS : BS.flat(),
+        //BS : BS.flat(),
         TS : returnTS ? TS.flat() : [],
         ACC : ACC.flat(),
         ORG : ORG.flat()

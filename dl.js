@@ -29,6 +29,7 @@ function list(path='', search=''){
     console.log(uri)
     const files =  get(uri)    
     return files.map(f => ({
+        name : f.name,
         path : path == '' ? f.name : path + '/' + f.name,
         size : f.size,
         type : f.file ? 'file' : 'folder',
@@ -157,11 +158,13 @@ function setup() {
         let drives = get(`https://graph.microsoft.com/v1.0/sites/${site.id}/drives`)
         for(let drive of drives){
             res.push({
-                driveId   : drive.id,
-                driveName : drive.name,
+                 siteName  : site.name,
+                 driveId   : drive.id,
+               
+                //driveName : drive.name,
                 driveType : drive.driveType,
-                siteId    : site.id,
-                siteName  : site.name,
+                //siteId    : site.id,
+                
                 hostName  : site.siteCollection?.hostname
             })
         }
