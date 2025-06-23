@@ -10,21 +10,21 @@ function disconnect() {
     return "Disconnected from FTP server";
 }
 
-function get(path) {
+function read(path) {
     console.log(`Getting file from path: ${path}`);    
     return JSON.parse(xlc.ftpGet(path))
 }
 
-function getRaw(path) {
+function readRaw(path) {
     return xlc.ftpGet(path);    
 }
 
-function put(path, jsonData) {
+function write(path, jsonData) {
     console.log(`Putting file to path: ${path}`);
     return xlc.ftpPut(path, JSON.stringify(jsonData));
 }
 
-function putRaw(path, rawData) {
+function writeRaw(path, rawData) {
     return xlc.ftpPut(path, rawData);
 }
 
@@ -38,13 +38,13 @@ function fdelete(path) {
     return xlc.ftpDelete(path);
 }
 
-outputs = {
+exports = {
     connect,
     disconnect,
-    get,
-    getRaw,
-    put,
-    putRaw,
+    read,
+    readRaw,
+    write,
+    writeRaw,
     list,
     delete: fdelete
 }
