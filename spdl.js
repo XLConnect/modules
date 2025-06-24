@@ -195,7 +195,7 @@ Object.defineProperty(exports, 'siteName', {
             this.webUrl = site.webUrl; // set the webUrl of the site
             let drives = get(`https://graph.microsoft.com/v1.0/sites/${site.id}/drives`);
             if(drives.length > 0) {
-                this.driveId = drives[0].id; // set the first drive of the site
+                this.driveId = drives.find(d => d.webUrl.includes('Doc')).id; // grab the id of the Document library drive
                 console.log(`Connected to site ${site.name} using driveId ${this.driveId}`);
             }   
         } else {
