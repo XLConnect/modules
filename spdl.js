@@ -112,22 +112,7 @@ function readP(paths){
     return results
 }
 
-function downloadBinary(remotePath, localPath){
-    // read the contents of a file as binary data
-    // path can be a string or an object with a 'path' property (like the one row from dl.list())
 
-    // validation: check that path is a string or an object with a path property
-    if(typeof remotePath !== 'string' && !remotePath.path){
-        throw new Error("remotePath must be a string or an object with a property 'path'")
-    }
-
-    // if path is an object, convert to path (string)
-    let path = remotePath.path ?? remotePath
-
-    let uri = `https://graph.microsoft.com/v1.0/drives/${this.driveId}/root:/${path}:/content`
-    let res = xlc.downloadBinary(uri, localPath, 'spdl').Result
-    return localPath
-}
 
 function write(path, data){
 	return http.put(`https://graph.microsoft.com/v1.0/drives/${this.driveId}/root:/${path}:/content?$select=id,size`, data, null, 'spdl')
@@ -158,11 +143,28 @@ function writeP(paths, datas){
     return results
 }
 
+function downloadBinary(remotePath, localPath){
+    // read the contents of a file as binary data
+    // path can be a string or an object with a 'path' property (like the one row from dl.list())
+
+    // validation: check that path is a string or an object with a path property
+    if(typeof remotePath !== 'string' && !remotePath.path){
+        throw new Error("remotePath must be a string or an object with a property 'path'")
+    }
+
+    // if path is an object, convert to path (string)
+    let path = remotePath.path ?? remotePath
+
+    let uri = `https://graph.microsoft.com/v1.0/drives/${this.driveId}/root:/${path}:/content`
+    let res = xlc.downloadBinary(uri, localPath, 'spdl').Result
+    return localPath
+}
+
 function uploadBinary(remotePath, localpath, headers = null){
     // write string to sharepoint 
     let uri = `https://graph.microsoft.com/v1.0/drives/${this.driveId}/root:/${remotePath}:/content?$select=id,size`
     console.log(uri)
-    let res = xlc.putBinary(uri, localpath, headers, 'spdl').Result 
+    let res = xlc.uploadBinary(uri, localpath, headers, 'spdl').Result 
     return remotePath
 }
 
