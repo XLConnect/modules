@@ -168,7 +168,7 @@ function uploadBinary(remotePath, localpath, headers = null){
     return remotePath
 }
 
-function setup() {
+function sites() {
     let res = []
     xlc.setProgressMessage("Getting sites...")
     let sites = get('https://graph.microsoft.com/v1.0/sites?search=*')
@@ -181,9 +181,12 @@ function setup() {
 }
 
 function drives(){
-    // list the drives of the current site
-    let uri = `https://graph.microsoft.com/v1.0/sites/${this.siteId}/drives`
-    return get(uri)
+    // list the drives of the current site, use this to manually set the DriveId when automatic fails because there are mulitple Doc drives 
+    let sites = get('https://graph.microsoft.com/v1.0/sites?search=*')        
+    let site = sites.find(s => s.name === this._siteName);
+    console.log(site)
+    let drives = get(`https://graph.microsoft.com/v1.0/sites/${site.id}/drives`);
+    return drives;
 }
 
 let _siteName = "Assign a Sharepoint SiteName, use setup() to list available sites";
@@ -214,7 +217,7 @@ Object.defineProperty(exports, 'siteName', {
     configurable: false,
 });
 
-exports.setup = setup;
+exports.sites = sites;
 exports.drives = drives;
 
 exports.list = list;
