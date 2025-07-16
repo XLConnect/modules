@@ -184,12 +184,13 @@ function drives(){
     // list the drives of the current site, use this to manually set the DriveId when automatic fails because there are mulitple Doc drives 
     let sites = get('https://graph.microsoft.com/v1.0/sites?search=*')        
     let site = sites.find(s => s.name === this._siteName);
-    console.log(site)
     let drives = get(`https://graph.microsoft.com/v1.0/sites/${site.id}/drives`);
     return drives;
 }
 
 let _siteName = "Assign a Sharepoint SiteName, use setup() to list available sites";
+let _siteId = null;
+let _driveName = "Assign a Sharepoint SiteName, use setup() to list available sites";
 let _driveId = null;
 let webUrl = null;
 
@@ -198,20 +199,48 @@ Object.defineProperty(exports, 'siteName', {
     get: function() {
         return this._siteName;
     },
-    set: function(value) {
-        this._siteName = value;
+    set: function(value) {        
         let sites = get('https://graph.microsoft.com/v1.0/sites?search=*')        
         let site = sites.find(s => s.name === value);
         if(site) {
+            this._siteName = site.name; // set the siteName to the name of the site
+            this._siteId = site.id; // set the siteId to the id of the
             this.webUrl = site.webUrl; // set the webUrl of the site
             let drives = get(`https://graph.microsoft.com/v1.0/sites/${site.id}/drives`);
             if(drives.length > 0) {
-                this.driveId = drives.find(d => d.webUrl.toLowerCase().includes('doc')).id; // grab the id of the Document library drive
-                console.log(`Connected to site ${site.name} using driveId ${this.driveId}`);
+                let drive = drives.find(d => d.webUrl.toLowerCase().includes('doc')); // find the Document library drive
+                if(!drive) {
+                    throw new Error(`No Document library drive found for site ${site.name}, please assign the driveId manually using dl.driveId = 'driveId'`);                    
+                } else { 
+                    this._driveId = drive.id; // grab the id of the Document library drive
+                    this._driveName = drive.name; // set the driveName to the name of the Document library drive
+                    console.log(`Connected to site ${this._siteName} using drive ${this._driveName} (${this._driveId})}`);
+                }
             }   
         } else {
-            throw new Error(`Site ${value} not found`);
+            throw new Error(`Site ${value} not found, use sites() to list available sites`);
         }   
+    },
+    enumerable: true,
+    configurable: false,
+});
+
+Object.defineProperty(exports, 'driveName', {
+    get: function() {
+        return this._driveName;
+    },
+    set: function(value) {        
+        let drives = get(`https://graph.microsoft.com/v1.0/sites/${this._siteId}/drives`);
+        if(drives.length > 0) {
+            let drive = drives.find(d => d.name === value); // find the drive with the given name
+            if(!drive) {
+                throw new Error(`Drive ${value} not found for site ${this._siteName}, use drives() to list available drives`);                    
+            } else { 
+                this._driveId = drive.id; // grab the id of the Document library drive
+                this._driveName = drive.name; // set the driveName to the name of the Document library drive
+                console.log(`Connected to site ${this._siteName} using drive ${this._driveName} (${this._driveId})}`);
+            }
+        }          
     },
     enumerable: true,
     configurable: false,
