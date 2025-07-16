@@ -180,6 +180,12 @@ function setup() {
     }))
 }
 
+function drives(){
+    // list the drives of the current site
+    let uri = `https://graph.microsoft.com/v1.0/sites/${this.siteId}/drives`
+    return get(uri)
+}
+
 let _siteName = "Assign a Sharepoint SiteName, use setup() to list available sites";
 let _driveId = null;
 let webUrl = null;
@@ -209,6 +215,7 @@ Object.defineProperty(exports, 'siteName', {
 });
 
 exports.setup = setup;
+exports.drives = drives;
 
 exports.list = list;
 exports.read = read;
