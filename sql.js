@@ -294,8 +294,8 @@ function agg(array, operations) {
     return Object.values(result);
 }
 
-exports.README(){
-	/*
+function README() {
+/*
 	SQL.js - A simple SQL-like query engine for JavaScript arrays
 
 	How to use:
@@ -363,6 +363,8 @@ exports.README(){
 
 	*/
 }
+
+exports.README= README;
 
 Array.prototype.count = function(filter) { return f_count(this, filter) };
 Array.prototype.sum = function(lambda) { return f_sum(this, lambda) }
