@@ -294,6 +294,75 @@ function agg(array, operations) {
     return Object.values(result);
 }
 
+exports.README(){
+	/*
+	SQL.js - A simple SQL-like query engine for JavaScript arrays
+
+	How to use:
+	1. Import the library:
+		sql = require('sql.js');
+
+	2. On simple arrays:
+		arrayData = [1, 2, 3, 4, 5];
+		total = arrayData.sum(); // 15
+
+	3. On arrays of objects (tables):
+		 tableData = [
+			{ id: 1, name: 'Alice', age: 30 },
+			{ id: 2, name: 'Bob', age: 25 },
+			{ id: 3, name: 'Charlie', age: 35 }
+		];
+
+		The lambda argument can be either a string with the property name or a lambda that returns the value to sum.
+
+		// name a property to sum:
+		averageAge = tableData.avg('age'); // 30
+
+		// use a lambda function to sum:
+		totalAge = tableData.sum(e => e.age); // 90
+
+		Available functions:
+		myArray.sum(lambda) - Sums the values in the array or the specified property of objects
+		myArray.avg(lambda) - Calculates the average of the values in the array or the specified property of objects
+		myArray.min(lambda) - Finds the minimum value in the array or the specified property of objects
+		myArray.max(lambda) - Finds the maximum value in the array or the specified property of objects
+		myArray.count() - Counts the number of elements in the array
+		myArray.stdev(lambda) - Calculates the standard deviation of the values in the array or the specified property of objects
+		myArray.unique(lambda) - Returns an array of unique values or unique values of the specified property
+
+		
+
+		myArray.toObject(keySelector) - Converts the array to an object using the specified key selector
+
+	Aggregation:
+		myArray.agg(operations) - Aggregates the array based on the specified operations, where operations is an object with keys as property names and values as aggregation functions (group, sum, min, max, count, avg, stdev)
+
+		Usage example:
+		let aggregated = tableData.agg({
+			name: group,
+			age: sum
+		});
+
+		available operations:
+		group - Group by this property
+		sum   - Sum the values of this property
+		min   - Find the minimum value of this property
+		max   - Find the maximum value of this property
+		count - Count the number of elements
+		avg   - Calculate the average of this property
+		stdev - Calculate the standard deviation of this property
+
+	Helper functions:
+		tableData.df(columns) - Converts the array to a dataframe-like object (object of arrays) with specified columns
+		Convert a table to a dataframe-like object (object of arrays):
+
+		myObj = tableData.df(columns) - Converts the array to a dataframe-like object with specified columns
+
+	Describe a table:
+		tableData.desc() - Returns a description of the table (e.g., count, mean, min, max for each numeric column)
+
+	*/
+}
 
 Array.prototype.count = function(filter) { return f_count(this, filter) };
 Array.prototype.sum = function(lambda) { return f_sum(this, lambda) }
