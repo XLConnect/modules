@@ -31,8 +31,8 @@ function companySettings(){
 	return call('/v2/CompanySettings')
 }
 
-function costCentres(){
-	return call('/v2/CostCentres')
+function costCenters(){
+	return call('/v2/CostCenters')
 }
 
 function customers(){
@@ -85,7 +85,7 @@ exports.accountTypes = accountTypes
 exports.accountBalances = accountBalances
 exports.articles = articles
 exports.companySettings = companySettings
-exports.costCentres = costCentres
+exports.costCenters = costCenters
 exports.customers = customers
 exports.customerInvoices = customerInvoices
 exports.supplierInvoices = supplierInvoices
