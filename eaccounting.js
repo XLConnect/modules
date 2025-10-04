@@ -53,7 +53,7 @@ function supplierInvoices(){
 
 function call(api){
 	
-	let firstSep = api.includes('&') ? '&' : '?'
+	let firstSep = api.includes('?') ? '?' : '&'
 	let page = 1
 	let pageSize = 1000
 		
