@@ -327,7 +327,14 @@ function pullJournals(tenantId, tenantName, accBasis, startDate, endDate, syncFi
     if (dEnd < dStart) throw "startDate must be before endDate";
 
     // get tracking categories 
-    const tcCats = trackingCategories(tenantId).filter(tc => tc.Status === 'ACTIVE').map(tc => tc.Name)	
+    const tcs = trackingCategories(tenantId)
+    const tcCats = tcs.filter(tc => tc.Status === 'ACTIVE').map(tc => tc.Name)	    
+    const tcDict = {};
+    for(const tc of tcs){
+        for(const option of tc.Options){
+            tcDict[option.TrackingOptionID] = option.Name
+        }
+    }
 
     // read journals from disk
     let jns = [];
@@ -356,8 +363,8 @@ function pullJournals(tenantId, tenantName, accBasis, startDate, endDate, syncFi
                     let tc1 = null;
                     let tc2 = null;
                     for(let tc of jl.TrackingCategories){
-                        if(tc.Name === tcCats[0]) tc1 = tc.Option
-                        if(tc.Name === tcCats[1]) tc2 = tc.Option
+                        if(tc.Name === tcCats[0]) tc1 = tcDict[tc.TrackingOptionID]
+                        if(tc.Name === tcCats[1]) tc2 = tcDict[tc.TrackingOptionID]                       
                     }
                     jr.TrackingCategory1 = tc1
                     jr.TrackingCategory2 = tc2
