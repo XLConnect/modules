@@ -68,6 +68,18 @@ function README() {
 	*/
 }
 
+function f_count(array, filter) {
+	// if a filter function is provided, count only the elements that match the filter
+	if (filter) {
+		let filtered = array.filter(filter);
+		return filtered.length;
+	} else {
+		return array.length;
+	}	
+}
+
+
+
 function f_sum(array, lambda) {
 	// lamdba is either
 	// empty, to sum up values: myArr.sum() 
