@@ -1,0 +1,8 @@
+{
+  "name": "xlconnect-modules",
+  "private": true,
+  "description": "XLConnect add-in modules. Dev-only package.json for running unit tests; not used by the add-in.",
+  "scripts": {
+    "test": "node --test"
+  }
+}

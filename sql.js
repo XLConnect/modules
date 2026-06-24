@@ -6,68 +6,6 @@ count = Symbol('count');
 avg = Symbol('avg');
 stdev = Symbol('stdev');
 
-function README() {
-	/*
-
-	 genarl usage of the library
-	 1. import the library: 
-	 require('sql') // please not eyou don't have to assign it to a variable, it will automatically add the functions to Arrays
-	 2. call the functions on the array or object you want to work with:
-
-
-	// working with simple arrays *********************************
-	let arrayData = [1, 2, 3, 4, 5];
-	
-	let total = arrayData.sum(); // 15
-	let unique = arrayData.unique(); // [1, 2, 3, 4, 5]
-	let count = arrayData.count(); // 5
-
-	let min = arrayData.min(); // 1
-	let max = arrayData.max(); // 5
-	let average = arrayData.avg(); // 3
-	let stdev = arrayData.stdev(); // 1.58
-
-	let desc = arrayData.desc(); // [5, 4, 3, 2, 1]
-
-
-
-	// working with tables ******************************************
-	let tableData = [
-		{ Name: 'John', Age: 30, City: 'New York', Amount: 100 },
-		{ Name: 'Jane', Age: 25, City: 'Los Angeles', Amount: 200 },
-		{ Name: 'John', Age: 30, City: 'New York', Amount: 150 },
-		{ Name: 'Jane', Age: 25, City: 'Los Angeles', Amount: 300 }
-	];
-
-
-	let totals = objData.agg({ 
-		Name : group, 		
-		Amount : sum 
-	});
-
-	let summed = objData.sum('Amount'); // 650
-	let avged  = objData.avg('Amount'); // 162.5
-	let stdevd = objData.stdev('Amount'); // 70.71
-	let smallest  = objData.min('Amount'); // 100
-	let maxd   = objData.max('Amount'); // 300
-	let countd = objData.count(); // 4
-	let unique = objData.unique('Name'); // ['John', 'Jane']
-	
-	let desc   = objData.desc(); // sort by the first column in descending order
-	
-	let df     = objData.df(); // convert to a dataframe
-	let df2    = objData.df('Name, Age'); // convert to a dataframe with only the Name and Age columns
-	let df3    = objData.df('Name, Age', 'City'); // convert to a dataframe with only the Name and Age columns, grouped by City
-	
-	let obj    = objData.toObject('Name'); // convert to an object with Name as the key and the rest of the object as the value
-	let obj2   = objData.toObject('Name', 'Age'); // convert to an object with Name and Age as the key and the rest of the object as the value
-	let obj3   = objData.toObject('Name', 'Age', 'City'); // convert to an object with Name, Age and City as the key and the rest of the object as the value
-	let obj4   = objData.toObject('Name', 'Age', 'City', 'Amount'); // convert to an object with Name, Age, City and Amount as the key and the rest of the object as the value
-	let obj5   = objData.toObject('Name', 'Age', 'City', 'Amount', 'Date'); // convert to an object with Name, Age, City, Amount and Date as the key and the rest of the object as the value
-
-	*/
-}
-
 function f_count(array, filter) {
 	// if a filter function is provided, count only the elements that match the filter
 	if (filter) {
@@ -75,28 +13,28 @@ function f_count(array, filter) {
 		return filtered.length;
 	} else {
 		return array.length;
-	}	
+	}
 }
 
 
 
 function f_sum(array, lambda) {
 	// lamdba is either
-	// empty, to sum up values: myArr.sum() 
-	// a string with the property name to sum up for an array of objects (aka table): myArr.sum('Amount') 
+	// empty, to sum up values: myArr.sum()
+	// a string with the property name to sum up for an array of objects (aka table): myArr.sum('Amount')
 	// a lambda function that returns the value to sum: myArr.sum(e => e.Amount * e.Quantity)
-	
+
 	// convert a string to a lambda function
 	if(typeof lambda === 'string') {
-		prop = '' + lambda;	// force to copy to string b/c we converting the variable to a lambda
-		lambda = e => e[prop];	// force to copy to string b/c we converting the variable to a lambda 	
+		let prop = '' + lambda;	// force to copy to string b/c we converting the variable to a lambda
+		lambda = e => e[prop];	// force to copy to string b/c we converting the variable to a lambda
 	}
 
 	let sum = 0.0;
 	let c = 0.0; // A running compensation for lost low-order bits.
 
 	for (let i = 0; i < array.length; i++) {
-		
+
 		// If a lambda function is provided, use it to get the value; otherwise, use the array value directly.
 		let value = lambda ? lambda(array[i]) : array[i];
 
@@ -111,12 +49,12 @@ function f_sum(array, lambda) {
 }
 
 function f_avg (array, lambda) {
-	// lamdba is either a string with the property name or a lambda function that returns the value to sum	
+	// lamdba is either a string with the property name or a lambda function that returns the value to sum
 
 	// convert a string to a lambda function
 	if(typeof lambda === 'string') {
-		prop = '' + lambda;	// force to copy to string b/c we converting the variable to a lambda
-		lambda = e => e[prop];	// force to copy to string b/c we converting the variable to a lambda 	
+		let prop = '' + lambda;	// force to copy to string b/c we converting the variable to a lambda
+		lambda = e => e[prop];	// force to copy to string b/c we converting the variable to a lambda
 	}
 
 	// compute the average by dividing the sum by the number of elements
@@ -124,13 +62,15 @@ function f_avg (array, lambda) {
 }
 
 function f_stdev(array, lambda) {
+	// SAMPLE standard deviation, dividing by (n - 1).
+	// This matches Excel's STDEV.S / STDEV (use the population variant only when you have the whole population).
 	// lamdba is either a string with the property name or a lambda function that returns the value to sum
-	
+
 	// convert a string to a lambda function
 	if(typeof lambda === 'string') {
-		prop = '' + lambda;	// force to copy to string b/c we converting the variable to a lambda
-		lambda = e => e[prop];	// force to copy to string b/c we converting the variable to a lambda 	
-	}	
+		let prop = '' + lambda;	// force to copy to string b/c we converting the variable to a lambda
+		lambda = e => e[prop];	// force to copy to string b/c we converting the variable to a lambda
+	}
 
 	let avg = array.avg(lambda);
 	let sum = 0.0;
@@ -149,14 +89,15 @@ function f_stdev(array, lambda) {
 
 function f_min(array, lambda) {
 	// lamdba is either a string with the property name or a lambda function that returns the value to sum
-	
+
 	// convert a string to a lambda function
 	if(typeof lambda === 'string') {
-		prop = '' + lambda;	// force to copy to string b/c we converting the variable to a lambda
-		lambda = e => e[prop];	// force to copy to string b/c we converting the variable to a lambda 	
+		let prop = '' + lambda;	// force to copy to string b/c we converting the variable to a lambda
+		lambda = e => e[prop];	// force to copy to string b/c we converting the variable to a lambda
 	}
 
-	let min = Number.MAX_VALUE;
+	// seed with +Infinity so the first real value always wins, including all-negative arrays
+	let min = Infinity;
 	for (let i = 0; i < array.length; i++) {
 		let value = lambda ? lambda(array[i]) : array[i];
 		min = Math.min(min, value);
@@ -166,14 +107,15 @@ function f_min(array, lambda) {
 
 function f_max(array, lambda) {
 	// lamdba is either a string with the property name or a lambda function that returns the value to sum
-	
+
 	// convert a string to a lambda function
 	if(typeof lambda === 'string') {
-		prop = '' + lambda;	// force to copy to string b/c we converting the variable to a lambda
-		lambda = e => e[prop];	// force to copy to string b/c we converting the variable to a lambda 	
+		let prop = '' + lambda;	// force to copy to string b/c we converting the variable to a lambda
+		lambda = e => e[prop];	// force to copy to string b/c we converting the variable to a lambda
 	}
 
-	let max = Number.MIN_VALUE;
+	// seed with -Infinity so the first real value always wins, including all-negative arrays
+	let max = -Infinity;
 	for (let i = 0; i < array.length; i++) {
 		let value = lambda ? lambda(array[i]) : array[i];
 		max = Math.max(max, value);
@@ -185,14 +127,19 @@ function unique(array, lambda) {
 
 	// convert a string to a lambda function
 	if(typeof lambda === 'string') {
-		prop = '' + lambda;	// force to copy to string b/c we converting the variable to a lambda
-		lambda = e => e[prop];	// force to copy to string b/c we converting the variable to a lambda 	
+		let prop = '' + lambda;	// force to copy to string b/c we converting the variable to a lambda
+		lambda = e => e[prop];	// force to copy to string b/c we converting the variable to a lambda
 	}
 
+	// use a Set for O(n) lookups instead of indexOf (O(n^2)) - matters for large datalake pulls
+	let seen = new Set();
 	let distinct = [];
 	for (let i = 0; i < array.length; i++) {
 		let value = lambda ? lambda(array[i]) : array[i];
-		if (distinct.indexOf(value) === -1) distinct.push(value);
+		if (!seen.has(value)) {
+			seen.add(value);
+			distinct.push(value);
+		}
 	}
 	return distinct;
 }
@@ -207,12 +154,60 @@ function df(array, columns=null){
 	// if omitted, all properties of the object are used
 
 	let dfr = {};
-	let keys = columns ? columns.split(',') : Object.keys(array[0]);
+	// trim the column names so 'Name, Age' works the same as 'Name,Age'; guard against an empty array
+	let keys = columns ? columns.split(',').map(s => s.trim()) : (array.length ? Object.keys(array[0]) : []);
 	for (let i = 0; i < keys.length; i++) {
 		let key = keys[i];
 		dfr[key] = array.map(e=>e[key]);
 	}
 	return dfr;
+}
+
+function kahanSum(array) {
+	// sum with Kahan's algorithm to keep precision on larger arrays
+	let sum = 0.0;
+	let c = 0.0; // A running compensation for lost low-order bits.
+	for (let i = 0; i < array.length; i++) {
+		const y = array[i] - c;
+		const t = sum + y;
+		c = (t - sum) - y;
+		sum = t;
+	}
+	return sum;
+}
+
+function toObject(array, keySelector) {
+	// creates an object (dictionary) from an array of objects, using the value of a column as the key.
+	// this makes it fast to look up a row by its key: let byId = rows.toObject('Id'); byId[42]
+	// keySelector is either a string with the property name or a lambda that returns the key
+
+	if(keySelector === undefined) throw new Error('keySelector is required');
+	if(typeof keySelector === 'string') {
+		let prop = '' + keySelector;	// force to copy to string b/c we converting the variable to a lambda
+		keySelector = e => e[prop];		// force to copy to string b/c we converting the variable to a lambda
+	}
+
+	let dict = {};
+	for (let i = 0; i < array.length; i++) {
+		let key = keySelector(array[i]);
+		dict[key] = array[i];
+	}
+	return dict;
+}
+
+function desc(array) {
+	// returns an array of { Column, Min, Max, Sum, Avg, StDev, Count, Unique } describing each column of the table
+	let dfr = df(array);
+	return Object.entries(dfr).map(([column, values]) => ({
+		Column: column,
+		Min:    values.min(),
+		Max:    values.max(),
+		Sum:    values.sum(),
+		Avg:    values.avg(),
+		StDev:  values.stdev(),
+		Count:  values.length,
+		Unique: values.unique().length
+	}));
 }
 
 function agg(array, operations) {
@@ -226,7 +221,7 @@ function agg(array, operations) {
 		max   : maximum value in this column
 		count : number of rows
 		avg   : average value in this column
-		stdev : standard deviation of the values in this column		
+		stdev : SAMPLE standard deviation of the values in this column (n - 1, matches Excel STDEV.S)
 	*/
     const result = {};
 
@@ -246,13 +241,17 @@ function agg(array, operations) {
                         result[key][k] = item[k];
                         break;
                     case sum:
-                    case min:
-                    case max:
                     case count:
-                    case avg:
                         result[key][k] = 0;
                         break;
+                    case min:
+                    case max:
+                        // null = "not set yet" so that a real 0 or negative values are handled correctly
+                        result[key][k] = null;
+                        break;
+                    case avg:
                     case stdev:
+                        // collect the values, compute the final figure once all rows are seen
                         result[key][`${k}_values`] = [];
                         result[key][k] = 0;
                         break;
@@ -266,12 +265,12 @@ function agg(array, operations) {
                     result[key][k] += item[k]; // Here you can also replace with Kahan's if needed.
                     break;
                 case min:
-                    if (result[key][k] === 0 || item[k] < result[key][k]) {
+                    if (result[key][k] === null || item[k] < result[key][k]) {
                         result[key][k] = item[k];
                     }
                     break;
                 case max:
-                    if (result[key][k] === 0 || item[k] > result[key][k]) {
+                    if (result[key][k] === null || item[k] > result[key][k]) {
                         result[key][k] = item[k];
                     }
                     break;
@@ -292,18 +291,82 @@ function agg(array, operations) {
             switch (operations[k]) {
                 case avg:
                     result[key][k] = kahanSum(result[key][`${k}_values`]) / result[key][`${k}_values`].length;
+                    delete result[key][`${k}_values`];
                     break;
                 case stdev:
-                    const mean = kahanSum(result[key][`${k}_values`]) / result[key][`${k}_values`].length;
-                    const variance = kahanSum(result[key][`${k}_values`].map(value => (value - mean) ** 2)) / result[key][`${k}_values`].length;
+                    const values = result[key][`${k}_values`];
+                    const mean = kahanSum(values) / values.length;
+                    // sample variance: divide by (n - 1) to match Excel STDEV.S and f_stdev above
+                    const variance = kahanSum(values.map(value => (value - mean) ** 2)) / (values.length - 1);
                     result[key][k] = Math.sqrt(variance);
                     delete result[key][`${k}_values`];
                     break;
             }
         }
     }
-    
+
     return Object.values(result);
+}
+
+function copyColumnsFrom(target, source, keys, columns = null) {
+	/*
+	Copy columns from an old table onto a fresh one, matching rows by key.
+
+	Use case: you pull a fresh table from an API (target), but the user had
+	manually added/edited some columns in the previous pull (source). This
+	carries those columns over to the fresh data, row by row.
+
+		freshPull.copyColumnsFrom(oldTable, 'Id', ['Notes', 'Category']);
+
+	Arguments:
+		target  : the fresh table (array of objects) to copy INTO. Returned and mutated in place.
+		source  : the old table (array of objects) to copy FROM.
+		keys    : key column(s) used to match rows between the two tables.
+				  string of comma-separated names ('Id' or 'Id, Date') or an array.
+		columns : array of column names to copy from source to target, e.g. ['Notes', 'Category'].
+				  if omitted, every column present in source but NOT in target is copied
+				  (i.e. the columns the user added that the API doesn't return).
+
+	Notes:
+		- rows are matched on the composite of all key columns.
+		- target rows with no match in source are left untouched.
+		- if a column is missing on a target row it is created; existing target
+		  values for that column ARE overwritten with the source value.
+	*/
+
+	// normalize keys into an array of trimmed names (accepts 'Id, Date' or ['Id','Date'])
+	let keyList = Array.isArray(keys) ? keys.slice() : ('' + keys).split(',').map(s => s.trim()).filter(s => s.length);
+
+	// columns to copy is an array; if omitted, copy columns in source but not in target (the user's added columns)
+	let colList;
+	if (columns) {
+		colList = columns;
+	} else {
+		let targetCols = target.length ? Object.keys(target[0]) : [];
+		let sourceCols = source.length ? Object.keys(source[0]) : [];
+		colList = sourceCols.filter(c => targetCols.indexOf(c) === -1);
+	}
+
+	// build composite key for a row from the key columns
+	let makeKey = row => JSON.stringify(keyList.map(k => row[k]));
+
+	// index the source rows by their composite key for O(1) lookup
+	let lookup = {};
+	for (let i = 0; i < source.length; i++) {
+		lookup[makeKey(source[i])] = source[i];
+	}
+
+	// for each fresh row, find its old counterpart and copy the columns over
+	for (let i = 0; i < target.length; i++) {
+		let match = lookup[makeKey(target[i])];
+		if (!match) continue;
+		for (let j = 0; j < colList.length; j++) {
+			let col = colList[j];
+			if (match.hasOwnProperty(col)) target[i][col] = match[col];
+		}
+	}
+
+	return target;
 }
 
 function README() {
@@ -338,13 +401,12 @@ function README() {
 		myArray.avg(lambda) - Calculates the average of the values in the array or the specified property of objects
 		myArray.min(lambda) - Finds the minimum value in the array or the specified property of objects
 		myArray.max(lambda) - Finds the maximum value in the array or the specified property of objects
-		myArray.count() - Counts the number of elements in the array
-		myArray.stdev(lambda) - Calculates the standard deviation of the values in the array or the specified property of objects
+		myArray.count(filter) - Counts the elements in the array (optionally only those matching a filter)
+		myArray.stdev(lambda) - Sample standard deviation (n - 1, matches Excel STDEV.S)
 		myArray.unique(lambda) - Returns an array of unique values or unique values of the specified property
-
-		
-
-		myArray.toObject(keySelector) - Converts the array to an object using the specified key selector
+		myArray.toObject(keySelector) - Converts the array to a lookup object keyed by the given column
+		myArray.df(columns) - Converts the array to a dataframe-like object (object of arrays)
+		myArray.desc() - Describes each column: { Column, Min, Max, Sum, Avg, StDev, Count, Unique }
 
 	Aggregation:
 		myArray.agg(operations) - Aggregates the array based on the specified operations, where operations is an object with keys as property names and values as aggregation functions (group, sum, min, max, count, avg, stdev)
@@ -362,16 +424,15 @@ function README() {
 		max   - Find the maximum value of this property
 		count - Count the number of elements
 		avg   - Calculate the average of this property
-		stdev - Calculate the standard deviation of this property
+		stdev - Sample standard deviation of this property (n - 1, matches Excel STDEV.S)
 
-	Helper functions:
-		tableData.df(columns) - Converts the array to a dataframe-like object (object of arrays) with specified columns
-		Convert a table to a dataframe-like object (object of arrays):
+	Carry over user edits onto a fresh pull:
+		freshPull.copyColumnsFrom(oldTable, 'Id', ['Notes', 'Category'])
+		- Matches rows by key column(s) and copies the named columns from the old table onto the fresh one.
+		- Omit the columns argument to copy every column that exists in the old table but not the fresh one.
 
-		myObj = tableData.df(columns) - Converts the array to a dataframe-like object with specified columns
-
-	Describe a table:
-		tableData.desc() - Returns a description of the table (e.g., count, mean, min, max for each numeric column)
+	Note on dependencies:
+		This module is self-contained - it does not require any other module.
 
 	*/
 }
@@ -389,5 +450,6 @@ Array.prototype.stdev = function(lambda) { return f_stdev(this, lambda) }
 Array.prototype.toObject = function(keySelector) { return toObject(this, keySelector) }
 Array.prototype.unique = function(lambda) { return unique(this, lambda) }
 Array.prototype.desc = function() { return desc(this) }
+Array.prototype.df = function(columns) { return df(this, columns) }
 Array.prototype.agg = function(operations) { return agg(this, operations) }
-
+Array.prototype.copyColumnsFrom = function(source, keys, columns) { return copyColumnsFrom(this, source, keys, columns) }
